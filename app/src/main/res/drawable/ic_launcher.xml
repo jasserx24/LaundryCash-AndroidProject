@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp" android:height="48dp"
+    android:viewportWidth="48" android:viewportHeight="48">
+    <!-- blue rounded background -->
+    <path android:fillColor="#1565C0"
+        android:pathData="M10,2 L38,2 Q46,2 46,10 L46,38 Q46,46 38,46 L10,46 Q2,46 2,38 L2,10 Q2,2 10,2 Z"/>
+    <!-- washing machine body -->
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M13,9 L35,9 Q37,9 37,11 L37,37 Q37,39 35,39 L13,39 Q11,39 11,37 L11,11 Q11,9 13,9 Z"/>
+    <path android:fillColor="#90CAF9" android:pathData="M11,15 L37,15 L37,16 L11,16 Z"/>
+    <!-- door -->
+    <path android:fillColor="#1565C0"
+        android:pathData="M24,18.5 A8.5,8.5 0 1,1 23.99,18.5 Z"/>
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M24,21 A6,6 0 1,1 23.99,21 Z"/>
+    <!-- peso sign -->
+    <path android:fillColor="#2E7D32"
+        android:pathData="M22,23 L25,23 Q28,23 28,25.5 Q28,28 25,28 L23.4,28 L23.4,31 L22,31 Z M23.4,24.3 L23.4,26.7 L25,26.7 Q26.6,26.7 26.6,25.5 Q26.6,24.3 25,24.3 Z M20.5,24.9 L28.5,24.9 L28.5,25.6 L20.5,25.6 Z"/>
+    <path android:fillColor="#1565C0" android:pathData="M14,11 L18,11 L18,13 L14,13 Z"/>
+    <path android:fillColor="#1565C0" android:pathData="M31,12 A1.2,1.2 0 1,1 30.99,12 Z"/>
+</vector>

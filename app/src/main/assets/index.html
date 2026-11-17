@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="fil">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Laundry Cash</title>
+<style>
+  :root{
+    --bg:#f3f6fa; --card:#fff; --ink:#1b2430; --muted:#6b7686; --line:#e3e8ef;
+    --pri:#1565c0; --pri2:#e3eefc; --ok:#2e7d32; --ok2:#e6f4ea; --bad:#c62828; --bad2:#fdecea; --warn:#ef6c00;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:15px}
+  header{background:var(--pri);color:#fff;padding:14px 16px 12px;position:sticky;top:0;z-index:5}
+  header h1{margin:0;font-size:18px;font-weight:700}
+  header small{opacity:.85;font-size:12px}
+  main{padding:12px 12px 90px}
+  .page{display:none}.page.on{display:block}
+  .card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .card h2{margin:0 0 10px;font-size:15px}
+  .hero{background:linear-gradient(135deg,#1565c0,#0d47a1);color:#fff}
+  .hero .lbl{font-size:13px;opacity:.9}
+  .hero .big{font-size:34px;font-weight:800;margin:4px 0}
+  .hero .sub{font-size:12px;opacity:.85}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .stat{background:var(--card);border-radius:12px;padding:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .stat .l{font-size:12px;color:var(--muted)} .stat .v{font-size:19px;font-weight:700;margin-top:2px}
+  label{display:block;font-size:12px;color:var(--muted);margin:8px 0 4px}
+  input,textarea,select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-size:16px;background:#fff;color:var(--ink)}
+  input:focus,textarea:focus{outline:2px solid var(--pri2);border-color:var(--pri)}
+  .row{display:flex;gap:8px}.row>*{flex:1}
+  button{border:0;border-radius:10px;padding:11px 14px;font-size:15px;font-weight:600;cursor:pointer}
+  .btn{background:var(--pri);color:#fff;width:100%;margin-top:12px}
+  .btn.ok{background:var(--ok)} .btn.ghost{background:var(--pri2);color:var(--pri)}
+  .sm{padding:7px 10px;font-size:13px;border-radius:8px}
+  .b-ok{background:var(--ok);color:#fff}.b-ed{background:var(--pri2);color:var(--pri)}.b-del{background:var(--bad2);color:var(--bad)}
+  .item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .item:last-child{border-bottom:0}
+  .item .info{flex:1;min-width:0}
+  .item .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item .meta{font-size:12px;color:var(--muted)}
+  .item .amt{font-weight:700;white-space:nowrap}
+  .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;margin-top:6px}
+  .empty{color:var(--muted);text-align:center;padding:14px 0;font-size:14px}
+  .tot{display:flex;justify-content:space-between;font-weight:700;padding-top:8px;border-top:2px solid var(--line);margin-top:6px}
+  /* Report template (fixed) */
+  .rpt{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;background:#fffdf5;border:1px dashed #d8c99a;border-radius:10px;padding:14px}
+  .rpt .t{text-align:center;font-weight:800;margin-bottom:2px}
+  .rpt .d{text-align:center;font-size:12px;color:var(--muted);margin-bottom:10px}
+  .rpt .ln{display:flex;justify-content:space-between;padding:4px 0}
+  .rpt .neg{color:var(--bad)} .rpt .pos{color:var(--ok)}
+  .rpt .coh{border-top:2px solid var(--ink);margin-top:6px;padding-top:8px;font-weight:800;font-size:16px}
+  .pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;background:var(--bad2);color:var(--bad);font-weight:700}
+  .pill.ok{background:var(--ok2);color:var(--ok)}
+  nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;z-index:6;padding-bottom:env(safe-area-inset-bottom)}
+  nav button{flex:1;background:none;border-radius:0;padding:8px 2px 9px;color:var(--muted);font-size:11px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:2px}
+  nav button .ic{font-size:20px;line-height:1}
+  nav button.on{color:var(--pri)}
+  .badge{background:var(--bad);color:#fff;border-radius:10px;font-size:10px;padding:0 5px;margin-left:2px}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;z-index:20}
+  .modal.on{display:flex}
+  .sheet{background:#fff;width:100%;border-radius:18px 18px 0 0;padding:16px;max-height:90vh;overflow:auto}
+  .sheet h3{margin:0 0 6px}
+  .toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:#263238;color:#fff;padding:10px 16px;border-radius:20px;font-size:14px;display:none;z-index:30}
+  .note{font-size:12px;color:var(--muted);margin-top:6px}
+  .seg{display:flex;background:var(--pri2);border-radius:10px;padding:3px;margin-bottom:10px}
+  .seg button{flex:1;background:none;color:var(--pri);padding:8px}
+  .seg button.on{background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.1)}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="hdrTitle">Laundry Cash</h1>
+  <small id="hdrDate"></small>
+</header>
+
+<main>
+  <!-- DASHBOARD -->
+  <section class="page on" id="p-dash">
+    <div class="card hero">
+      <div class="lbl">Cash on Hand ngayong araw</div>
+      <div class="big" id="dCoh">₱0.00</div>
+      <div class="sub" id="dCohSub"></div>
+    </div>
+    <div class="grid2">
+      <div class="stat"><div class="l">Total Sales (ngayon)</div><div class="v" id="dSales">₱0.00</div></div>
+      <div class="stat"><div class="l">Expenses (ngayon)</div><div class="v" id="dExp" style="color:var(--bad)">₱0.00</div></div>
+      <div class="stat"><div class="l">Claimed (ngayon)</div><div class="v" id="dClaim" style="color:var(--ok)">₱0.00</div></div>
+      <div class="stat"><div class="l">Bagong Unpaid (ngayon)</div><div class="v" id="dUnpT" style="color:var(--warn)">₱0.00</div></div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h2>Lahat ng Unpaid pa (hindi pa claimed)</h2>
+      <div class="row" style="align-items:center">
+        <div><div class="note" style="margin:0">Bilang</div><div style="font-size:22px;font-weight:800" id="dUnpN">0</div></div>
+        <div><div class="note" style="margin:0">Kabuuan</div><div style="font-size:22px;font-weight:800;color:var(--bad)" id="dUnpA">₱0.00</div></div>
+      </div>
+      <button class="btn ghost" onclick="go('unpaid')">Tingnan ang listahan</button>
+    </div>
+    <div class="card">
+      <h2>Mga huling report</h2>
+      <div id="dHist"></div>
+    </div>
+  </section>
+
+  <!-- REPORT -->
+  <section class="page" id="p-report">
+    <div class="card">
+      <h2>Report sa pag-out</h2>
+      <div class="row">
+        <div><label>Petsa</label><input type="date" id="rDate" onchange="loadReportForm()"></div>
+        <div><label>Staff / Nag-out</label><input id="rStaff" placeholder="Pangalan"></div>
+      </div>
+      <label>Total Sales (₱)</label>
+      <input id="rSales" type="number" inputmode="decimal" step="0.01" placeholder="0.00" oninput="renderReport()">
+      <div class="note">Ang Unpaid, Claimed at Expenses ay kusang kinukuha sa mga listahan para sa petsang ito.</div>
+    </div>
+    <div class="card">
+      <div class="rpt" id="rpt"></div>
+      <button class="btn ok" onclick="saveReport()">I-save ang Report</button>
+      <button class="btn ghost" onclick="shareReport()">I-share / Kopyahin ang Report</button>
+    </div>
+    <div class="card">
+      <h2>Detalye ng report na ito</h2>
+      <div id="rDetail"></div>
+    </div>
+  </section>
+
+  <!-- UNPAID -->
+  <section class="page" id="p-unpaid">
+    <div class="card">
+      <h2>Magdagdag ng Unpaid</h2>
+      <label>Pangalan ng customer</label><input id="uName" placeholder="Hal. Maria Santos">
+      <div class="row">
+        <div><label>Halaga (₱)</label><input id="uAmt" type="number" inputmode="decimal" step="0.01" placeholder="0.00"></div>
+        <div><label>Petsa</label><input id="uDate" type="date"></div>
+      </div>
+      <button class="btn" onclick="addUnpaid()">+ Idagdag sa Unpaid</button>
+    </div>
+    <div class="card">
+      <h2>Listahan ng Unpaid <span class="pill" id="uCount">0</span></h2>
+      <input id="uSearch" placeholder="Hanapin ang pangalan…" oninput="renderUnpaid()" style="margin-bottom:6px">
+      <div id="uList"></div>
+      <div class="tot"><span>Kabuuang Unpaid</span><span id="uTot">₱0.00</span></div>
+    </div>
+  </section>
+
+  <!-- CLAIMED -->
+  <section class="page" id="p-claimed">
+    <div class="card">
+      <h2>Mga Claimed (nabayaran na)</h2>
+      <div class="row">
+        <div><label>Mula</label><input type="date" id="cFrom" onchange="renderClaimed()"></div>
+        <div><label>Hanggang</label><input type="date" id="cTo" onchange="renderClaimed()"></div>
+      </div>
+      <input id="cSearch" placeholder="Hanapin ang pangalan…" oninput="renderClaimed()" style="margin-top:8px">
+    </div>
+    <div class="card">
+      <div id="cList"></div>
+      <div class="tot"><span>Kabuuang Claimed</span><span id="cTot">₱0.00</span></div>
+    </div>
+  </section>
+
+  <!-- EXPENSES -->
+  <section class="page" id="p-exp">
+    <div class="card">
+      <h2>Magdagdag ng Expense</h2>
+      <label>Para saan</label><input id="eDesc" placeholder="Hal. Detergent, LPG, Kuryente">
+      <div class="row">
+        <div><label>Halaga (₱)</label><input id="eAmt" type="number" inputmode="decimal" step="0.01" placeholder="0.00"></div>
+        <div><label>Petsa</label><input id="eDate" type="date" onchange="renderExp()"></div>
+      </div>
+      <button class="btn" onclick="addExp()">+ Idagdag ang Expense</button>
+    </div>
+    <div class="card">
+      <h2>Expenses sa <span id="eDayLbl"></span></h2>
+      <div id="eList"></div>
+      <div class="tot"><span>Kabuuang Expenses</span><span id="eTot">₱0.00</span></div>
+    </div>
+  </section>
+
+  <!-- MORE -->
+  <section class="page" id="p-more">
+    <div class="card">
+      <h2>Lahat ng Report (History)</h2>
+      <div id="hList"></div>
+    </div>
+    <div class="card">
+      <h2>Settings</h2>
+      <label>Pangalan ng branch / shop (lalabas sa taas ng report)</label>
+      <input id="sShop" placeholder="Hal. TS Laundry – Mexico Branch">
+      <button class="btn" onclick="saveSettings()">I-save</button>
+    </div>
+    <div class="card">
+      <h2>Backup ng data</h2>
+      <div class="note">Nasa phone lang naka-save ang data. Mag-backup paminsan-minsan (ipadala sa Messenger/Gmail mo).</div>
+      <button class="btn ghost" onclick="backup()">I-backup (share)</button>
+      <button class="btn ghost" onclick="openRestore()">I-restore mula sa backup</button>
+    </div>
+  </section>
+</main>
+
+<nav>
+  <button class="on" data-p="dash" onclick="go('dash')"><span class="ic">🏠</span>Dashboard</button>
+  <button data-p="report" onclick="go('report')"><span class="ic">🧾</span>Report</button>
+  <button data-p="unpaid" onclick="go('unpaid')"><span class="ic">⏳</span><span>Unpaid<span class="badge" id="navBadge" style="display:none"></span></span></button>
+  <button data-p="claimed" onclick="go('claimed')"><span class="ic">✅</span>Claimed</button>
+  <button data-p="exp" onclick="go('exp')"><span class="ic">💸</span>Expenses</button>
+  <button data-p="more" onclick="go('more')"><span class="ic">☰</span>Iba pa</button>
+</nav>
+
+<!-- Edit modal -->
+<div class="modal" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="sheet" id="sheet"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- Storage ---------- */
+const KEY='laundry_cash_v1';
+let DB={unpaid:[],expenses:[],reports:[],settings:{shop:''}};
+function load(){
+  try{const s=localStorage.getItem(KEY); if(s){const d=JSON.parse(s); DB=Object.assign(DB,d);} }catch(e){}
+  DB.unpaid=DB.unpaid||[];DB.expenses=DB.expenses||[];DB.reports=DB.reports||[];DB.settings=DB.settings||{shop:''};
+}
+function save(){ try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){toast('Hindi ma-save!');} }
+
+/* ---------- Helpers ---------- */
+const $=id=>document.getElementById(id);
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+function today(){const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10);}
+function peso(n){n=Number(n)||0;return (n<0?'-':'')+'₱'+Math.abs(n).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function num(v){const n=parseFloat(v);return isNaN(n)?0:Math.round(n*100)/100;}
+function fdate(s){if(!s)return '';const [y,m,d]=s.split('-');const M=['Ene','Peb','Mar','Abr','May','Hun','Hul','Ago','Set','Okt','Nob','Dis'];return M[+m-1]+' '+(+d)+', '+y;}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(t._t);t._t=setTimeout(()=>t.style.display='none',1800);}
+const sum=(a,f)=>a.reduce((s,x)=>s+num(f(x)),0);
+
+/* ---------- Core computation (fixed formula) ---------- */
+// Cash on Hand = Total Sales − Unpaid + Claimed − Expenses
+function compute(date,sales){
+  const unpaidItems=DB.unpaid.filter(u=>u.date===date);
+  const claimedItems=DB.unpaid.filter(u=>u.claimed&&u.dateClaimed===date);
+  const expItems=DB.expenses.filter(e=>e.date===date);
+  const unpaid=sum(unpaidItems,u=>u.amount), claimed=sum(claimedItems,u=>u.amount), exp=sum(expItems,e=>e.amount);
+  sales=num(sales);
+  return {date,sales,unpaid,claimed,exp,coh:Math.round((sales-unpaid+claimed-exp)*100)/100,unpaidItems,claimedItems,expItems};
+}
+function reportFor(date){return DB.reports.find(r=>r.date===date);}
+
+/* ---------- Navigation ---------- */
+function go(p){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
+  $('p-'+p).classList.add('on');
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.p===p));
+  window.scrollTo(0,0); renderAll();
+}
+
+/* ---------- Dashboard ---------- */
+function renderDash(){
+  const t=today(), r=reportFor(t), c=compute(t,r?r.sales:0);
+  $('dCoh').textContent=peso(c.coh);
+  $('dCohSub').textContent=r?('Report na-save'+(r.staff?' ni '+r.staff:'')+' • '+fdate(t)):'Wala pang Total Sales na na-input ngayon — pumunta sa Report.';
+  $('dSales').textContent=peso(c.sales);$('dExp').textContent=peso(c.exp);
+  $('dClaim').textContent=peso(c.claimed);$('dUnpT').textContent=peso(c.unpaid);
+  const open=DB.unpaid.filter(u=>!u.claimed);
+  $('dUnpN').textContent=open.length;$('dUnpA').textContent=peso(sum(open,u=>u.amount));
+  const reps=[...DB.reports].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+  $('dHist').innerHTML=reps.length?reps.map(histRow).join(''):'<div class="empty">Wala pang report.</div>';
+}
+function histRow(r){
+  const c=compute(r.date,r.sales);
+  return `<div class="item" onclick="openReport('${r.date}')"><div class="info"><div class="nm">${fdate(r.date)}</div>
+  <div class="meta">${esc(r.staff||'—')} • Sales ${peso(c.sales)}</div></div><div class="amt">${peso(c.coh)}</div></div>`;
+}
+function openReport(d){go('report');$('rDate').value=d;loadReportForm();}
+
+/* ---------- Report ---------- */
+function loadReportForm(){
+  const d=$('rDate').value||today(), r=reportFor(d);
+  $('rSales').value=r?r.sales:''; $('rStaff').value=r?(r.staff||''):($('rStaff').value||'');
+  renderReport();
+}
+function reportText(c,staff){
+  const W=30, ln=(l,v)=>l+' '.repeat(Math.max(1,W-l.length-v.length))+v;
+  const shop=DB.settings.shop||'LAUNDRY';
+  return [shop.toUpperCase(),'CASH REPORT','Petsa: '+fdate(c.date),'Staff: '+(staff||'—'),'-'.repeat(W),
+    ln('Total Sales',peso(c.sales)),
+    ln('Less: Unpaid','('+peso(c.unpaid)+')'),
+    ln('Add: Claimed',peso(c.claimed)),
+    ln('Less: Expenses','('+peso(c.exp)+')'),
+    '='.repeat(W),
+    ln('TOTAL CASH ON HAND',peso(c.coh))].join('\n');
+}
+function renderReport(){
+  const d=$('rDate').value||today(), c=compute(d,$('rSales').value);
+  $('rpt').innerHTML=`<div class="t">${esc((DB.settings.shop||'LAUNDRY').toUpperCase())}<br>CASH REPORT</div>
+   <div class="d">${fdate(d)}${$('rStaff').value?' • '+esc($('rStaff').value):''}</div>
+   <div class="ln"><span>Total Sales</span><b>${peso(c.sales)}</b></div>
+   <div class="ln neg"><span>Less: Unpaid</span><span>(${peso(c.unpaid)})</span></div>
+   <div class="ln pos"><span>Add: Claimed</span><span>${peso(c.claimed)}</span></div>
+   <div class="ln neg"><span>Less: Expenses</span><span>(${peso(c.exp)})</span></div>
+   <div class="ln coh"><span>TOTAL CASH ON HAND</span><span>${peso(c.coh)}</span></div>`;
+  const sec=(title,items,f)=>`<div style="font-weight:700;margin-top:8px">${title}</div>`+
+    (items.length?items.map(f).join(''):'<div class="note">Wala</div>');
+  $('rDetail').innerHTML=
+    sec('Unpaid ('+c.unpaidItems.length+')',c.unpaidItems,u=>`<div class="item"><div class="info"><div class="nm">${esc(u.name)}</div><div class="meta">${u.claimed?'<span class="pill ok">claimed '+fdate(u.dateClaimed)+'</span>':'<span class="pill">unpaid</span>'}</div></div><div class="amt">${peso(u.amount)}</div></div>`)+
+    sec('Claimed ('+c.claimedItems.length+')',c.claimedItems,u=>`<div class="item"><div class="info"><div class="nm">${esc(u.name)}</div><div class="meta">unpaid mula ${fdate(u.date)}</div></div><div class="amt">${peso(u.amount)}</div></div>`)+
+    sec('Expenses ('+c.expItems.length+')',c.expItems,e=>`<div class="item"><div class="info"><div class="nm">${esc(e.desc)}</div></div><div class="amt">${peso(e.amount)}</div></div>`);
+}
+function saveReport(){
+  const d=$('rDate').value||today(); const v=$('rSales').value;
+  if(v===''){toast('Ilagay ang Total Sales');$('rSales').focus();return;}
+  const ex=reportFor(d);
+  if(ex){ if(!confirm('May report na para sa '+fdate(d)+'. Palitan?'))return; ex.sales=num(v); ex.staff=$('rStaff').value.trim(); ex.savedAt=Date.now(); }
+  else DB.reports.push({id:uid(),date:d,sales:num(v),staff:$('rStaff').value.trim(),savedAt:Date.now()});
+  save(); toast('Na-save ang report ✔'); renderAll();
+}
+function shareReport(){
+  const d=$('rDate').value||today(), c=compute(d,$('rSales').value);
+  let txt=reportText(c,$('rStaff').value.trim());
+  if(c.unpaidItems.length) txt+='\n\nUnpaid:\n'+c.unpaidItems.map(u=>'- '+u.name+' '+peso(u.amount)).join('\n');
+  if(c.claimedItems.length) txt+='\n\nClaimed:\n'+c.claimedItems.map(u=>'- '+u.name+' '+peso(u.amount)+' (mula '+fdate(u.date)+')').join('\n');
+  if(c.expItems.length) txt+='\n\nExpenses:\n'+c.expItems.map(e=>'- '+e.desc+' '+peso(e.amount)).join('\n');
+  shareText(txt,'Cash Report '+fdate(d));
+}
+function shareText(txt,title){
+  if(window.Android&&Android.share){Android.share(txt,title);return;}
+  if(navigator.share){navigator.share({title,text:txt}).catch(()=>{});return;}
+  if(navigator.clipboard){navigator.clipboard.writeText(txt).then(()=>toast('Nakopya ✔'));}
+}
+
+/* ---------- Unpaid ---------- */
+function addUnpaid(){
+  const name=$('uName').value.trim(), amt=num($('uAmt').value), date=$('uDate').value||today();
+  if(!name){toast('Ilagay ang pangalan');return;} if(amt<=0){toast('Ilagay ang halaga');return;}
+  DB.unpaid.push({id:uid(),name,amount:amt,date,claimed:false,dateClaimed:''});
+  save(); $('uName').value='';$('uAmt').value=''; toast('Naidagdag sa Unpaid'); renderAll();
+}
+function renderUnpaid(){
+  const q=$('uSearch').value.trim().toLowerCase();
+  const open=DB.unpaid.filter(u=>!u.claimed).sort((a,b)=>a.date.localeCompare(b.date));
+  const list=open.filter(u=>!q||u.name.toLowerCase().includes(q));
+  $('uCount').textContent=open.length;
+  $('uList').innerHTML=list.length?list.map(u=>{
+    const days=Math.round((new Date(today())-new Date(u.date))/864e5);
+    return `<div class="item" style="flex-wrap:wrap"><div class="info"><div class="nm">${esc(u.name)}</div>
+      <div class="meta">${fdate(u.date)} • ${days<=0?'ngayon':days+' araw na'} • Date claimed: —</div></div>
+      <div class="amt">${peso(u.amount)}</div>
+      <div class="acts" style="width:100%"><button class="sm b-ed" onclick="editItem('${u.id}')">Edit</button>
+      <button class="sm b-del" onclick="delUnpaid('${u.id}')">Burahin</button>
+      <button class="sm b-ok" onclick="claim('${u.id}')">✔ Claimed</button></div></div>`;}).join('')
+    :'<div class="empty">'+(open.length?'Walang tugma.':'Walang unpaid. 🎉')+'</div>';
+  $('uTot').textContent=peso(sum(list,u=>u.amount));
+  const b=$('navBadge'); b.style.display=open.length?'inline':'none'; b.textContent=open.length;
+}
+function claim(id){
+  const u=DB.unpaid.find(x=>x.id===id); if(!u)return;
+  openSheet(`<h3>I-claim: ${esc(u.name)}</h3><div class="note">${peso(u.amount)} • unpaid mula ${fdate(u.date)}</div>
+   <label>Date claimed</label><input type="date" id="mDC" value="${today()}">
+   <button class="btn ok" onclick="doClaim('${id}')">✔ Bayad na (Claimed)</button>
+   <button class="btn ghost" onclick="closeModal()">Kanselahin</button>`);
+}
+function doClaim(id){const u=DB.unpaid.find(x=>x.id===id);u.claimed=true;u.dateClaimed=$('mDC').value||today();save();closeModal();toast('Claimed na ✔');renderAll();}
+function delUnpaid(id){const u=DB.unpaid.find(x=>x.id===id);if(!confirm('Burahin si '+u.name+' ('+peso(u.amount)+')?'))return;DB.unpaid=DB.unpaid.filter(x=>x.id!==id);save();renderAll();}
+
+/* ---------- Claimed (editable) ---------- */
+function renderClaimed(){
+  const q=$('cSearch').value.trim().toLowerCase(), f=$('cFrom').value, t=$('cTo').value;
+  const list=DB.unpaid.filter(u=>u.claimed&&(!q||u.name.toLowerCase().includes(q))&&(!f||u.dateClaimed>=f)&&(!t||u.dateClaimed<=t))
+    .sort((a,b)=>b.dateClaimed.localeCompare(a.dateClaimed));
+  $('cList').innerHTML=list.length?list.map(u=>`<div class="item" style="flex-wrap:wrap"><div class="info"><div class="nm">${esc(u.name)}</div>
+     <div class="meta">Unpaid: ${fdate(u.date)} • Claimed: <b>${fdate(u.dateClaimed)}</b></div></div><div class="amt" style="color:var(--ok)">${peso(u.amount)}</div>
+     <div class="acts" style="width:100%"><button class="sm b-ed" onclick="editItem('${u.id}')">Edit</button>
+     <button class="sm b-del" onclick="unclaim('${u.id}')">Ibalik sa Unpaid</button></div></div>`).join('')
+    :'<div class="empty">Walang claimed sa napiling petsa.</div>';
+  $('cTot').textContent=peso(sum(list,u=>u.amount));
+}
+function unclaim(id){const u=DB.unpaid.find(x=>x.id===id);if(!confirm('Ibalik si '+u.name+' sa Unpaid?'))return;u.claimed=false;u.dateClaimed='';save();renderAll();toast('Naibalik sa Unpaid');}
+function editItem(id){
+  const u=DB.unpaid.find(x=>x.id===id); if(!u)return;
+  openSheet(`<h3>Edit ${u.claimed?'Claimed':'Unpaid'}</h3>
+   <label>Pangalan</label><input id="mN" value="${esc(u.name)}">
+   <label>Halaga (₱)</label><input id="mA" type="number" inputmode="decimal" step="0.01" value="${u.amount}">
+   <div class="row"><div><label>Petsa (unpaid)</label><input type="date" id="mD" value="${u.date}"></div>
+   <div><label>Date claimed</label><input type="date" id="mDC" value="${u.dateClaimed||''}"></div></div>
+   <div class="note">Kapag may Date claimed, mapupunta ito sa Claimed. Kapag blangko, mananatiling Unpaid.</div>
+   <button class="btn" onclick="saveEdit('${id}')">I-save</button>
+   <button class="btn ghost" onclick="closeModal()">Kanselahin</button>`);
+}
+function saveEdit(id){
+  const u=DB.unpaid.find(x=>x.id===id); const n=$('mN').value.trim(), a=num($('mA').value);
+  if(!n||a<=0){toast('Kulang ang detalye');return;}
+  u.name=n;u.amount=a;u.date=$('mD').value||u.date;u.dateClaimed=$('mDC').value;u.claimed=!!u.dateClaimed;
+  save();closeModal();toast('Na-update ✔');renderAll();
+}
+
+/* ---------- Expenses ---------- */
+function addExp(){
+  const desc=$('eDesc').value.trim(), amt=num($('eAmt').value), date=$('eDate').value||today();
+  if(!desc){toast('Ilagay kung para saan');return;} if(amt<=0){toast('Ilagay ang halaga');return;}
+  DB.expenses.push({id:uid(),desc,amount:amt,date}); save(); $('eDesc').value='';$('eAmt').value=''; toast('Naidagdag ang expense'); renderAll();
+}
+function renderExp(){
+  const d=$('eDate').value||today(); $('eDayLbl').textContent=fdate(d);
+  const list=DB.expenses.filter(e=>e.date===d);
+  $('eList').innerHTML=list.length?list.map(e=>`<div class="item"><div class="info"><div class="nm">${esc(e.desc)}</div></div>
+    <div class="amt">${peso(e.amount)}</div><button class="sm b-ed" onclick="editExp('${e.id}')">Edit</button></div>`).join('')
+    :'<div class="empty">Walang expense sa araw na ito.</div>';
+  $('eTot').textContent=peso(sum(list,e=>e.amount));
+}
+function editExp(id){
+  const e=DB.expenses.find(x=>x.id===id);
+  openSheet(`<h3>Edit Expense</h3><label>Para saan</label><input id="mN" value="${esc(e.desc)}">
+   <div class="row"><div><label>Halaga (₱)</label><input id="mA" type="number" inputmode="decimal" step="0.01" value="${e.amount}"></div>
+   <div><label>Petsa</label><input type="date" id="mD" value="${e.date}"></div></div>
+   <button class="btn" onclick="saveExp('${id}')">I-save</button>
+   <button class="btn" style="background:var(--bad2);color:var(--bad)" onclick="delExp('${id}')">Burahin</button>
+   <button class="btn ghost" onclick="closeModal()">Kanselahin</button>`);
+}
+function saveExp(id){const e=DB.expenses.find(x=>x.id===id);const n=$('mN').value.trim(),a=num($('mA').value);if(!n||a<=0){toast('Kulang ang detalye');return;}
+  e.desc=n;e.amount=a;e.date=$('mD').value||e.date;save();closeModal();renderAll();toast('Na-update ✔');}
+function delExp(id){if(!confirm('Burahin ang expense?'))return;DB.expenses=DB.expenses.filter(x=>x.id!==id);save();closeModal();renderAll();}
+
+/* ---------- More ---------- */
+function renderMore(){
+  const reps=[...DB.reports].sort((a,b)=>b.date.localeCompare(a.date));
+  $('hList').innerHTML=reps.length?reps.map(histRow).join(''):'<div class="empty">Wala pang report.</div>';
+  $('sShop').value=DB.settings.shop||'';
+}
+function saveSettings(){DB.settings.shop=$('sShop').value.trim();save();toast('Na-save ✔');renderAll();}
+function backup(){shareText(JSON.stringify(DB),'Laundry Cash Backup '+today());}
+function openRestore(){
+  openSheet(`<h3>I-restore ang backup</h3><div class="note">I-paste ang buong backup text. Papalitan nito ang lahat ng data sa phone na ito.</div>
+   <textarea id="mR" rows="7" style="margin-top:8px"></textarea>
+   <button class="btn" onclick="doRestore()">I-restore</button><button class="btn ghost" onclick="closeModal()">Kanselahin</button>`);
+}
+function doRestore(){
+  try{const d=JSON.parse($('mR').value);if(!d||!Array.isArray(d.unpaid))throw 0;
+    if(!confirm('Papalitan ang lahat ng data. Ituloy?'))return; DB={unpaid:d.unpaid||[],expenses:d.expenses||[],reports:d.reports||[],settings:d.settings||{shop:''}};save();closeModal();renderAll();toast('Na-restore ✔');}
+  catch(e){toast('Mali ang backup text');}
+}
+
+/* ---------- Modal ---------- */
+function openSheet(h){$('sheet').innerHTML=h;$('modal').classList.add('on');}
+function closeModal(){$('modal').classList.remove('on');}
+
+/* ---------- Init ---------- */
+function renderAll(){
+  $('hdrTitle').textContent=DB.settings.shop||'Laundry Cash';
+  renderDash();renderUnpaid();renderClaimed();renderExp();renderMore();
+  if($('p-report').classList.contains('on'))renderReport();
+}
+load();
+$('hdrDate').textContent=new Date().toLocaleDateString('fil-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+$('rDate').value=today();$('uDate').value=today();$('eDate').value=today();
+loadReportForm();renderAll();
+</script>
+</body>
+</html>
