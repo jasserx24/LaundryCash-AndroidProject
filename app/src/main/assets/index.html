@@ -252,6 +252,7 @@
       <div style="overflow-x:auto"><table class="tbl" id="sTbl"></table></div>
       <div class="note">🔒 locked report • * no report saved (not included in totals) • ⚠ records changed after saving. Claim = cash claims only. Left = cash on hand minus what was taken later for expenses. Swipe left to see all columns. Tap a date to open its report.</div>
     </div>
+    <div class="card"><h2>Expenses this month</h2><div id="sExp"></div></div>
     <div class="card"><h2>Unpaid and claimed this month</h2><div id="sUC"></div></div>
   </section>
 
@@ -293,7 +294,7 @@
 
 <script>
 /* ================= Basics ================= */
-const APP_VERSION='2.3';
+const APP_VERSION='2.4';
 const KEY='laundry_cash_v1';
 const ONLINE_METHODS=['GCash','Maya','Bank Transfer','Other online'];
 let DB={unpaid:[],expenses:[],online:[],reports:[],settings:{shop:'',pin:''}};
@@ -1025,6 +1026,22 @@ function renderSum(){
       <td><b>${c.saved?nf(c.coh):'—'}</b></td><td>${c.saved?nf(c.left):'—'}</td></tr>`).join('')+
     `<tr class="tt"><td>TOTAL</td><td>${nf(t.sales)}</td><td>${nf(t.unpaid)}</td><td>${nf(t.claimed)}</td><td>${nf(t.online)}</td><td>${nf(t.exp)}</td><td>${nf(t.coh)}</td><td>${nf(t.left)}</td></tr>`
     :'<tr><td class="empty">No records this month.</td></tr>';
+  // ---- Expenses this month, with the daily sales each was paid from ----
+  const short=d=>fdate(d).replace(/, \d{4}$/,'');
+  const eT=r2(sum(M.expM,e=>e.amount)), eSelf=r2(sum(M.expM,selfPart)), eOld=r2(sum(M.expM,oldSum));
+  $('sExp').innerHTML=M.expM.length?`<div style="overflow-x:auto"><table class="tbl" style="white-space:normal">
+    <tr><th>Date</th><th style="text-align:left">What for</th><th>Amount</th><th style="text-align:left">Paid from daily sales</th></tr>
+    ${M.expM.map(e=>`<tr onclick="goExp('${e.date}')"><td style="white-space:nowrap">${short(e.date)}</td><td style="text-align:left">${esc(e.desc)}</td>
+      <td style="white-space:nowrap"><b>${nf(e.amount)}</b></td>
+      <td style="text-align:left;font-size:11px">${srcs(e).filter(x=>num(x.amount)>0).map(x=>`<div style="white-space:nowrap">${short(x.date)}${x.date===e.date?' (same day)':''}: <b>${nf(x.amount)}</b></div>`).join('')}</td></tr>`).join('')}
+    <tr class="tt"><td>TOTAL</td><td></td><td>${nf(eT)}</td><td></td></tr></table></div>
+    <div class="sumbox" style="margin-top:10px">${kv('Total expenses paid this month',peso(eT))}
+      ${kv("↳ Deducted from the same day's sales",peso(eSelf))}${kv("↳ Taken from previous days' sales",peso(eOld),'color:var(--onl)')}</div>
+    ${(()=>{const by={};M.expM.forEach(e=>srcs(e).forEach(x=>{if(num(x.amount)>0)by[x.date]=r2((by[x.date]||0)+num(x.amount));}));
+      const ks=Object.keys(by).sort();return ks.length?`<div class="note" style="margin:8px 0 4px"><b>Taken from each day's sales</b></div>`+
+      ks.map(k=>{const r=reportFor(k);return kv(short(k)+(r&&r.snap?' <span class="note">(sales '+peso(r.snap.sales)+')</span>':''),peso(by[k]),'color:var(--bad)');}).join(''):''})()}
+    <div class="note">Tap an expense to open it.</div>`
+    :'<div class="empty">No expenses this month.</div>';
   const o=outstanding();
   $('sUC').innerHTML=`<div class="sumbox">${kv('New unpaid this month',M.unpaidM.length+' • '+peso(sum(M.unpaidM,u=>u.amount)))}
     ${kv('Claimed this month',M.claimedM.length+' • '+peso(sum(M.claimedM,u=>u.amount)),'color:var(--ok)')}
@@ -1184,6 +1201,10 @@ function exportMonth(){
     ['Taken later for expenses (e.g. salary)',MON(-t.taken)],[B('Cash remaining from these days'),MONB(t.left)],[],
     [B('Online received')],...Object.entries(t.byMethod).map(([m,a])=>[m,MON(a)]),
     ['Online sales',MON(t.online)],['Claimed online',MON(t.claimedOn)],[B('TOTAL ONLINE'),MONB(t.onlineRecv)],[],
+    [B('Expenses paid this month')],
+    ['Total expenses ('+M.expM.length+')',MON(sum(M.expM,e=>e.amount))],
+    ["Deducted from the same day's sales",MON(sum(M.expM,selfPart))],
+    ["Taken from previous days' sales",MON(sum(M.expM,oldSum))],[],
     ['Days with a report',t.reports],['Average sales per day',MON(t.avg)],['Highest sales',M.best?MON(M.best.sales):'',M.best?M.best.date:''],[],
     [B('Unpaid and claimed')],
     ['New unpaid this month ('+M.unpaidM.length+')',MON(sum(M.unpaidM,u=>u.amount))],
@@ -1204,7 +1225,10 @@ function exportMonth(){
   const exp={name:'Expenses',cols:[12,28,14,16,18,44],rows:[[B('Expenses — '+mn)],[],
     [H('Date paid'),H('What for'),H('Amount'),H('From this date'),H('From previous days'),H('Taken from')],
     ...M.expM.map(e=>[e.date,e.desc,MON(e.amount),MON(selfPart(e)),MON(oldSum(e)),oldParts(e).map(x=>x.date+' '+peso(x.amount)).join(', ')]),
-    [B('TOTAL ('+M.expM.length+')'),'',MONB(sum(M.expM,e=>e.amount)),MONB(sum(M.expM,selfPart)),MONB(sum(M.expM,oldSum))]]};
+    [B('TOTAL ('+M.expM.length+')'),'',MONB(sum(M.expM,e=>e.amount)),MONB(sum(M.expM,selfPart)),MONB(sum(M.expM,oldSum))],[],
+    [H('Paid from daily sales of'),H('Daily sales'),H('Amount taken')],
+    ...(()=>{const by={};M.expM.forEach(e=>srcs(e).forEach(x=>{if(num(x.amount)>0)by[x.date]=r2((by[x.date]||0)+num(x.amount));}));
+      return Object.keys(by).sort().map(k=>{const r=reportFor(k);return [k,r&&r.snap?MON(r.snap.sales):'',MON(by[k])];});})()]};
   saveBytes(makeXlsx([{name:'Summary',cols:[40,16,12],rows:S},daily,unp,sheetClaimed(M.claimedM,'Claimed — '+mn),sheetOnline(M,mn),exp,sheetOutstanding()]),
     'LaundryCash_'+ym+'.xlsx',XLSX_MIME);
 }
