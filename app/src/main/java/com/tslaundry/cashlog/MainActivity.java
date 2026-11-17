@@ -50,7 +50,7 @@ public class MainActivity extends Activity {
                     Intent i = new Intent(Intent.ACTION_GET_CONTENT);
                     i.addCategory(Intent.CATEGORY_OPENABLE);
                     i.setType("*/*");
-                    startActivityForResult(Intent.createChooser(i, "Piliin ang backup file"), REQ_FILE);
+                    startActivityForResult(Intent.createChooser(i, "Choose the backup file"), REQ_FILE);
                 } catch (Exception e) {
                     fileCallback = null;
                     return false;
@@ -115,7 +115,7 @@ public class MainActivity extends Activity {
             try {
                 bytes = Base64.decode(base64, Base64.DEFAULT);
             } catch (Exception e) {
-                toast("Hindi ma-save ang file");
+                toast("Could not save the file");
                 return;
             }
 
@@ -126,7 +126,7 @@ public class MainActivity extends Activity {
             try (FileOutputStream fos = new FileOutputStream(f)) {
                 fos.write(bytes);
             } catch (Exception e) {
-                toast("Hindi ma-save ang file");
+                toast("Could not save the file");
                 return;
             }
 
@@ -146,7 +146,7 @@ public class MainActivity extends Activity {
                     }
                 } catch (Exception ignored) { }
             }
-            if (savedToDownloads) toast("Na-save sa Download folder: " + name);
+            if (savedToDownloads) toast("Saved to Download folder: " + name);
 
             // 3) Share sheet (Messenger, Gmail, Drive, Viber…)
             final Uri shareUri = Uri.parse("content://" + FileShareProvider.AUTHORITY + "/" + Uri.encode(name));
@@ -158,11 +158,11 @@ public class MainActivity extends Activity {
                     i.putExtra(Intent.EXTRA_SUBJECT, name);
                     i.setClipData(ClipData.newRawUri(name, shareUri));
                     i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    Intent chooser = Intent.createChooser(i, "I-share ang " + name);
+                    Intent chooser = Intent.createChooser(i, "Share " + name);
                     chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     startActivity(chooser);
                 } catch (Exception e) {
-                    toast("Walang app na pwedeng pag-share-an");
+                    toast("No app available to share with");
                 }
             });
         }
