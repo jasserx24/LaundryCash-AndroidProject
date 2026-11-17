@@ -18,5 +18,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <provider
+            android:name=".FileShareProvider"
+            android:authorities="com.tslaundry.cashlog.files"
+            android:exported="false"
+            android:grantUriPermissions="true" />
     </application>
 </manifest>

@@ -13,7 +13,13 @@
   html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
     font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:15px}
   header{background:var(--pri);color:#fff;padding:14px 16px 12px;position:sticky;top:0;z-index:5}
-  header h1{margin:0;font-size:18px;font-weight:700}
+  header{display:flex;align-items:center;gap:10px}
+  header .hl{flex:1;min-width:0}
+  header h1{margin:0;font-size:18px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hbtn{background:rgba(255,255,255,.18);color:#fff;font-size:20px;padding:6px 11px;border-radius:10px}
+  .pill.on{background:#e8eaf6;color:#3949ab}
+  .rpt .on{color:#3949ab}
+  .rpt .sub2{font-size:12px;color:var(--muted);border-top:1px dashed #d8c99a;margin-top:10px;padding-top:8px}
   header small{opacity:.85;font-size:12px}
   main{padding:12px 12px 90px}
   .page{display:none}.page.on{display:block}
@@ -54,7 +60,7 @@
   .pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;background:var(--bad2);color:var(--bad);font-weight:700}
   .pill.ok{background:var(--ok2);color:var(--ok)}
   nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;z-index:6;padding-bottom:env(safe-area-inset-bottom)}
-  nav button{flex:1;background:none;border-radius:0;padding:8px 2px 9px;color:var(--muted);font-size:11px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:2px}
+  nav button{flex:1;background:none;border-radius:0;padding:8px 1px 9px;color:var(--muted);font-size:10px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:2px}
   nav button .ic{font-size:20px;line-height:1}
   nav button.on{color:var(--pri)}
   .badge{background:var(--bad);color:#fff;border-radius:10px;font-size:10px;padding:0 5px;margin-left:2px}
@@ -64,6 +70,18 @@
   .sheet h3{margin:0 0 6px}
   .toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:#263238;color:#fff;padding:10px 16px;border-radius:20px;font-size:14px;display:none;z-index:30}
   .note{font-size:12px;color:var(--muted);margin-top:6px}
+  .tbl{width:100%;border-collapse:collapse;font-size:11.5px;white-space:nowrap}
+  .tbl th{background:var(--pri2);color:var(--pri);text-align:right;padding:7px 3px;font-weight:700}
+  .tbl th:first-child,.tbl td:first-child{text-align:left}
+  .tbl td{padding:7px 3px;border-bottom:1px solid var(--line);text-align:right}
+  .tbl tr.tt td{font-weight:800;border-top:2px solid var(--ink);border-bottom:0}
+  .tbl tr.nr td{color:var(--muted)}
+  .kv{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)}
+  .kv:last-child{border-bottom:0}.kv b{white-space:nowrap}
+  .sumbox{background:var(--bg);border-radius:10px;padding:10px;margin-bottom:10px}
+  .aging{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+  .aging div{background:#fff;border-radius:8px;padding:8px;text-align:center;font-size:11px;color:var(--muted)}
+  .aging b{display:block;font-size:14px;color:var(--ink);margin-top:2px}
   .seg{display:flex;background:var(--pri2);border-radius:10px;padding:3px;margin-bottom:10px}
   .seg button{flex:1;background:none;color:var(--pri);padding:8px}
   .seg button.on{background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.1)}
@@ -71,8 +89,9 @@
 </head>
 <body>
 <header>
-  <h1 id="hdrTitle">Laundry Cash</h1>
-  <small id="hdrDate"></small>
+  <div class="hl"><h1 id="hdrTitle">Laundry Cash</h1>
+  <small id="hdrDate"></small></div>
+  <button class="hbtn" onclick="go('more')" aria-label="Iba pa">☰</button>
 </header>
 
 <main>
@@ -86,8 +105,10 @@
     <div class="grid2">
       <div class="stat"><div class="l">Total Sales (ngayon)</div><div class="v" id="dSales">₱0.00</div></div>
       <div class="stat"><div class="l">Expenses (ngayon)</div><div class="v" id="dExp" style="color:var(--bad)">₱0.00</div></div>
-      <div class="stat"><div class="l">Claimed (ngayon)</div><div class="v" id="dClaim" style="color:var(--ok)">₱0.00</div></div>
+      <div class="stat"><div class="l">Claimed – Cash (ngayon)</div><div class="v" id="dClaim" style="color:var(--ok)">₱0.00</div></div>
       <div class="stat"><div class="l">Bagong Unpaid (ngayon)</div><div class="v" id="dUnpT" style="color:var(--warn)">₱0.00</div></div>
+      <div class="stat"><div class="l">Online na natanggap (ngayon)</div><div class="v" id="dOnl" style="color:#3949ab">₱0.00</div></div>
+      <div class="stat"><div class="l" id="dOnlL">GCash / Maya</div><div class="v" id="dOnlB" style="font-size:13px;font-weight:600;color:var(--muted)">—</div></div>
     </div>
     <div class="card" style="margin-top:12px">
       <h2>Lahat ng Unpaid pa (hindi pa claimed)</h2>
@@ -113,7 +134,7 @@
       </div>
       <label>Total Sales (₱)</label>
       <input id="rSales" type="number" inputmode="decimal" step="0.01" placeholder="0.00" oninput="renderReport()">
-      <div class="note">Ang Unpaid, Claimed at Expenses ay kusang kinukuha sa mga listahan para sa petsang ito.</div>
+      <div class="note">Ang Unpaid, Claimed, Online at Expenses ay kusang kinukuha sa mga listahan para sa petsang ito.</div>
     </div>
     <div class="card">
       <div class="rpt" id="rpt"></div>
@@ -138,6 +159,11 @@
       <button class="btn" onclick="addUnpaid()">+ Idagdag sa Unpaid</button>
     </div>
     <div class="card">
+      <h2>Summary ng Unpaid</h2>
+      <div id="uSum"></div>
+      <button class="btn ghost" onclick="exportUnpaid()">⬇ I-export ang Unpaid sa Excel</button>
+    </div>
+    <div class="card">
       <h2>Listahan ng Unpaid <span class="pill" id="uCount">0</span></h2>
       <input id="uSearch" placeholder="Hanapin ang pangalan…" oninput="renderUnpaid()" style="margin-bottom:6px">
       <div id="uList"></div>
@@ -156,8 +182,36 @@
       <input id="cSearch" placeholder="Hanapin ang pangalan…" oninput="renderClaimed()" style="margin-top:8px">
     </div>
     <div class="card">
+      <h2>Summary ng Claimed</h2>
+      <div id="cSum"></div>
+      <button class="btn ghost" onclick="exportClaimed()">⬇ I-export ang Claimed sa Excel</button>
+    </div>
+    <div class="card">
       <div id="cList"></div>
       <div class="tot"><span>Kabuuang Claimed</span><span id="cTot">₱0.00</span></div>
+    </div>
+  </section>
+
+  <!-- ONLINE PAYMENTS -->
+  <section class="page" id="p-online">
+    <div class="card">
+      <h2>Magdagdag ng Online Payment</h2>
+      <div class="note" style="margin-top:-6px">Para sa benta na binayaran sa GCash, Maya, bank transfer, atbp. Ibabawas ito sa Cash on Hand dahil wala sa kaha ang perang ito.</div>
+      <label>Paraan ng bayad</label>
+      <select id="oMethod"></select>
+      <div class="row">
+        <div><label>Halaga (₱)</label><input id="oAmt" type="number" inputmode="decimal" step="0.01" placeholder="0.00"></div>
+        <div><label>Petsa</label><input id="oDate" type="date" onchange="renderOnline()"></div>
+      </div>
+      <label>Pangalan ng customer (optional)</label><input id="oName" placeholder="Hal. Maria Santos">
+      <label>Reference no. (optional)</label><input id="oRef" inputmode="numeric" placeholder="Hal. 1023 456 789">
+      <button class="btn" onclick="addOnline()">+ Idagdag ang Online Payment</button>
+    </div>
+    <div class="card">
+      <h2>Online na natanggap sa <span id="oDayLbl"></span></h2>
+      <div id="oSum"></div>
+      <div id="oList"></div>
+      <button class="btn ghost" onclick="exportOnline()">⬇ I-export ang Online ng buwan sa Excel</button>
     </div>
   </section>
 
@@ -179,6 +233,24 @@
     </div>
   </section>
 
+  <!-- MONTHLY SUMMARY -->
+  <section class="page" id="p-sum">
+    <div class="card">
+      <h2>Monthly Summary</h2>
+      <label>Buwan</label>
+      <input type="month" id="mMonth" onchange="renderSum()">
+      <button class="btn ok" onclick="exportMonth()">⬇ I-export ang buong buwan sa Excel</button>
+      <div class="note">Kasama sa Excel: Summary, Daily Sales, Unpaid, Claimed, Online, Expenses, at lahat ng Unpaid pa.</div>
+    </div>
+    <div class="card"><h2>Sales ng buwan</h2><div id="sTot"></div></div>
+    <div class="card">
+      <h2>Daily Sales</h2>
+      <div style="overflow-x:auto"><table class="tbl" id="sTbl"></table></div>
+      <div class="note">Claim = claimed na cash lang. Online = sales na binayaran online. I-swipe pakaliwa kung hindi kita lahat. I-tap ang petsa para buksan ang report.</div>
+    </div>
+    <div class="card"><h2>Unpaid at Claimed ngayong buwan</h2><div id="sUC"></div></div>
+  </section>
+
   <!-- MORE -->
   <section class="page" id="p-more">
     <div class="card">
@@ -194,9 +266,11 @@
     <div class="card">
       <h2>Backup ng data</h2>
       <div class="note">Nasa phone lang naka-save ang data. Mag-backup paminsan-minsan (ipadala sa Messenger/Gmail mo).</div>
-      <button class="btn ghost" onclick="backup()">I-backup (share)</button>
+      <button class="btn ghost" onclick="backup()">⬇ I-backup (file)</button>
+      <button class="btn ghost" onclick="backupText()">I-backup bilang text (share)</button>
       <button class="btn ghost" onclick="openRestore()">I-restore mula sa backup</button>
     </div>
+    <div class="note" style="text-align:center" id="verLbl"></div>
   </section>
 </main>
 
@@ -205,8 +279,9 @@
   <button data-p="report" onclick="go('report')"><span class="ic">🧾</span>Report</button>
   <button data-p="unpaid" onclick="go('unpaid')"><span class="ic">⏳</span><span>Unpaid<span class="badge" id="navBadge" style="display:none"></span></span></button>
   <button data-p="claimed" onclick="go('claimed')"><span class="ic">✅</span>Claimed</button>
+  <button data-p="online" onclick="go('online')"><span class="ic">📱</span>Online</button>
   <button data-p="exp" onclick="go('exp')"><span class="ic">💸</span>Expenses</button>
-  <button data-p="more" onclick="go('more')"><span class="ic">☰</span>Iba pa</button>
+  <button data-p="sum" onclick="go('sum')"><span class="ic">📊</span>Summary</button>
 </nav>
 
 <!-- Edit modal -->
@@ -218,10 +293,10 @@
 <script>
 /* ---------- Storage ---------- */
 const KEY='laundry_cash_v1';
-let DB={unpaid:[],expenses:[],reports:[],settings:{shop:''}};
+let DB={unpaid:[],expenses:[],online:[],reports:[],settings:{shop:''}};
 function load(){
   try{const s=localStorage.getItem(KEY); if(s){const d=JSON.parse(s); DB=Object.assign(DB,d);} }catch(e){}
-  DB.unpaid=DB.unpaid||[];DB.expenses=DB.expenses||[];DB.reports=DB.reports||[];DB.settings=DB.settings||{shop:''};
+  DB.unpaid=DB.unpaid||[];DB.expenses=DB.expenses||[];DB.online=DB.online||[];DB.reports=DB.reports||[];DB.settings=DB.settings||{shop:''};
 }
 function save(){ try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){toast('Hindi ma-save!');} }
 
@@ -238,13 +313,24 @@ const sum=(a,f)=>a.reduce((s,x)=>s+num(f(x)),0);
 
 /* ---------- Core computation (fixed formula) ---------- */
 // Cash on Hand = Total Sales − Unpaid + Claimed − Expenses
+// Paraan ng bayad
+const ONLINE_METHODS=['GCash','Maya','Bank Transfer','Iba pa (online)'];
+const isCash=u=>!u.method||u.method==='Cash';
+const methodLbl=u=>isCash(u)?'Cash':u.method;
+// Cash on Hand = Total Sales − Unpaid + Claimed (cash) − Online − Expenses
 function compute(date,sales){
   const unpaidItems=DB.unpaid.filter(u=>u.date===date);
   const claimedItems=DB.unpaid.filter(u=>u.claimed&&u.dateClaimed===date);
+  const claimedCashItems=claimedItems.filter(isCash), claimedOnItems=claimedItems.filter(u=>!isCash(u));
   const expItems=DB.expenses.filter(e=>e.date===date);
-  const unpaid=sum(unpaidItems,u=>u.amount), claimed=sum(claimedItems,u=>u.amount), exp=sum(expItems,e=>e.amount);
+  const onlineItems=DB.online.filter(o=>o.date===date);
+  const unpaid=sum(unpaidItems,u=>u.amount), claimed=sum(claimedCashItems,u=>u.amount), claimedOn=sum(claimedOnItems,u=>u.amount);
+  const exp=sum(expItems,e=>e.amount), online=sum(onlineItems,o=>o.amount);
+  const byMethod={}; [...onlineItems,...claimedOnItems].forEach(x=>{byMethod[x.method]=(byMethod[x.method]||0)+num(x.amount);});
   sales=num(sales);
-  return {date,sales,unpaid,claimed,exp,coh:Math.round((sales-unpaid+claimed-exp)*100)/100,unpaidItems,claimedItems,expItems};
+  return {date,sales,unpaid,claimed,claimedOn,online,onlineRecv:Math.round((online+claimedOn)*100)/100,byMethod,exp,
+    coh:Math.round((sales-unpaid+claimed-online-exp)*100)/100,
+    unpaidItems,claimedItems,claimedCashItems,claimedOnItems,expItems,onlineItems};
 }
 function reportFor(date){return DB.reports.find(r=>r.date===date);}
 
@@ -263,6 +349,9 @@ function renderDash(){
   $('dCohSub').textContent=r?('Report na-save'+(r.staff?' ni '+r.staff:'')+' • '+fdate(t)):'Wala pang Total Sales na na-input ngayon — pumunta sa Report.';
   $('dSales').textContent=peso(c.sales);$('dExp').textContent=peso(c.exp);
   $('dClaim').textContent=peso(c.claimed);$('dUnpT').textContent=peso(c.unpaid);
+  $('dOnl').textContent=peso(c.onlineRecv);
+  const bm=Object.entries(c.byMethod);
+  $('dOnlB').innerHTML=bm.length?bm.map(([m,a])=>esc(m)+': <b style="color:var(--ink)">'+peso(a)+'</b>').join('<br>'):'Wala pa';
   const open=DB.unpaid.filter(u=>!u.claimed);
   $('dUnpN').textContent=open.length;$('dUnpA').textContent=peso(sum(open,u=>u.amount));
   const reps=[...DB.reports].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
@@ -287,10 +376,17 @@ function reportText(c,staff){
   return [shop.toUpperCase(),'CASH REPORT','Petsa: '+fdate(c.date),'Staff: '+(staff||'—'),'-'.repeat(W),
     ln('Total Sales',peso(c.sales)),
     ln('Less: Unpaid','('+peso(c.unpaid)+')'),
-    ln('Add: Claimed',peso(c.claimed)),
+    ln('Add: Claimed (Cash)',peso(c.claimed)),
+    ln('Less: Online Payment','('+peso(c.online)+')'),
     ln('Less: Expenses','('+peso(c.exp)+')'),
     '='.repeat(W),
-    ln('TOTAL CASH ON HAND',peso(c.coh))].join('\n');
+    ln('TOTAL CASH ON HAND',peso(c.coh)),
+    '',
+    'ONLINE NA NATANGGAP',
+    ...Object.entries(c.byMethod).map(([m,a])=>ln('  '+m,peso(a))),
+    ln('  Sales na online',peso(c.online)),
+    ln('  Claimed na online',peso(c.claimedOn)),
+    ln('TOTAL ONLINE',peso(c.onlineRecv))].join('\n');
 }
 function renderReport(){
   const d=$('rDate').value||today(), c=compute(d,$('rSales').value);
@@ -298,14 +394,21 @@ function renderReport(){
    <div class="d">${fdate(d)}${$('rStaff').value?' • '+esc($('rStaff').value):''}</div>
    <div class="ln"><span>Total Sales</span><b>${peso(c.sales)}</b></div>
    <div class="ln neg"><span>Less: Unpaid</span><span>(${peso(c.unpaid)})</span></div>
-   <div class="ln pos"><span>Add: Claimed</span><span>${peso(c.claimed)}</span></div>
+   <div class="ln pos"><span>Add: Claimed (Cash)</span><span>${peso(c.claimed)}</span></div>
+   <div class="ln neg"><span>Less: Online Payment</span><span>(${peso(c.online)})</span></div>
    <div class="ln neg"><span>Less: Expenses</span><span>(${peso(c.exp)})</span></div>
-   <div class="ln coh"><span>TOTAL CASH ON HAND</span><span>${peso(c.coh)}</span></div>`;
+   <div class="ln coh"><span>TOTAL CASH ON HAND</span><span>${peso(c.coh)}</span></div>
+   <div class="sub2"><b>ONLINE NA NATANGGAP</b>
+    ${Object.entries(c.byMethod).map(([m,a])=>`<div class="ln on"><span>${esc(m)}</span><span>${peso(a)}</span></div>`).join('')}
+    <div class="ln"><span>Sales na online</span><span>${peso(c.online)}</span></div>
+    <div class="ln"><span>Claimed na online</span><span>${peso(c.claimedOn)}</span></div>
+    <div class="ln" style="font-weight:800;color:#3949ab"><span>TOTAL ONLINE</span><span>${peso(c.onlineRecv)}</span></div></div>`;
   const sec=(title,items,f)=>`<div style="font-weight:700;margin-top:8px">${title}</div>`+
     (items.length?items.map(f).join(''):'<div class="note">Wala</div>');
   $('rDetail').innerHTML=
     sec('Unpaid ('+c.unpaidItems.length+')',c.unpaidItems,u=>`<div class="item"><div class="info"><div class="nm">${esc(u.name)}</div><div class="meta">${u.claimed?'<span class="pill ok">claimed '+fdate(u.dateClaimed)+'</span>':'<span class="pill">unpaid</span>'}</div></div><div class="amt">${peso(u.amount)}</div></div>`)+
-    sec('Claimed ('+c.claimedItems.length+')',c.claimedItems,u=>`<div class="item"><div class="info"><div class="nm">${esc(u.name)}</div><div class="meta">unpaid mula ${fdate(u.date)}</div></div><div class="amt">${peso(u.amount)}</div></div>`)+
+    sec('Claimed ('+c.claimedItems.length+')',c.claimedItems,u=>`<div class="item"><div class="info"><div class="nm">${esc(u.name)}</div><div class="meta">${mPill(u)} unpaid mula ${fdate(u.date)}</div></div><div class="amt">${peso(u.amount)}</div></div>`)+
+    sec('Online Payment ('+c.onlineItems.length+')',c.onlineItems,o=>`<div class="item"><div class="info"><div class="nm">${esc(o.name||'(walang pangalan)')}</div><div class="meta">${mPill(o)}${o.ref?' Ref: '+esc(o.ref):''}</div></div><div class="amt">${peso(o.amount)}</div></div>`)+
     sec('Expenses ('+c.expItems.length+')',c.expItems,e=>`<div class="item"><div class="info"><div class="nm">${esc(e.desc)}</div></div><div class="amt">${peso(e.amount)}</div></div>`);
 }
 function saveReport(){
@@ -320,7 +423,8 @@ function shareReport(){
   const d=$('rDate').value||today(), c=compute(d,$('rSales').value);
   let txt=reportText(c,$('rStaff').value.trim());
   if(c.unpaidItems.length) txt+='\n\nUnpaid:\n'+c.unpaidItems.map(u=>'- '+u.name+' '+peso(u.amount)).join('\n');
-  if(c.claimedItems.length) txt+='\n\nClaimed:\n'+c.claimedItems.map(u=>'- '+u.name+' '+peso(u.amount)+' (mula '+fdate(u.date)+')').join('\n');
+  if(c.claimedItems.length) txt+='\n\nClaimed:\n'+c.claimedItems.map(u=>'- '+u.name+' '+peso(u.amount)+' ['+methodLbl(u)+(u.ref?' Ref '+u.ref:'')+'] (mula '+fdate(u.date)+')').join('\n');
+  if(c.onlineItems.length) txt+='\n\nOnline Payment:\n'+c.onlineItems.map(o=>'- '+o.method+' '+peso(o.amount)+(o.name?' '+o.name:'')+(o.ref?' (Ref '+o.ref+')':'')).join('\n');
   if(c.expItems.length) txt+='\n\nExpenses:\n'+c.expItems.map(e=>'- '+e.desc+' '+peso(e.amount)).join('\n');
   shareText(txt,'Cash Report '+fdate(d));
 }
@@ -353,15 +457,27 @@ function renderUnpaid(){
     :'<div class="empty">'+(open.length?'Walang tugma.':'Walang unpaid. 🎉')+'</div>';
   $('uTot').textContent=peso(sum(list,u=>u.amount));
   const b=$('navBadge'); b.style.display=open.length?'inline':'none'; b.textContent=open.length;
+  renderUnpaidSum();
 }
 function claim(id){
   const u=DB.unpaid.find(x=>x.id===id); if(!u)return;
   openSheet(`<h3>I-claim: ${esc(u.name)}</h3><div class="note">${peso(u.amount)} • unpaid mula ${fdate(u.date)}</div>
    <label>Date claimed</label><input type="date" id="mDC" value="${today()}">
+   ${methodFields('Cash','')}
    <button class="btn ok" onclick="doClaim('${id}')">✔ Bayad na (Claimed)</button>
    <button class="btn ghost" onclick="closeModal()">Kanselahin</button>`);
 }
-function doClaim(id){const u=DB.unpaid.find(x=>x.id===id);u.claimed=true;u.dateClaimed=$('mDC').value||today();save();closeModal();toast('Claimed na ✔');renderAll();}
+function methodFields(method,ref){
+  return `<label>Paano nagbayad?</label>
+   <select id="mM" onchange="$('mRefW').style.display=this.value==='Cash'?'none':'block'">
+    ${['Cash',...ONLINE_METHODS].map(m=>`<option ${m===(method||'Cash')?'selected':''}>${m}</option>`).join('')}</select>
+   <div id="mRefW" style="display:${(method||'Cash')==='Cash'?'none':'block'}"><label>Reference no. (optional)</label>
+   <input id="mRef" inputmode="numeric" value="${esc(ref||'')}"></div>
+   <div class="note">Cash = madadagdag sa Cash on Hand. Online = hindi madadagdag sa cash, pero lalabas sa "Online na natanggap".</div>`;
+}
+function readMethod(u){const m=$('mM').value;u.method=m;u.ref=m==='Cash'?'':$('mRef').value.trim();}
+function mPill(x){return isCash(x)?'<span class="pill ok">Cash</span>':'<span class="pill on">'+esc(x.method)+'</span>';}
+function doClaim(id){const u=DB.unpaid.find(x=>x.id===id);u.claimed=true;u.dateClaimed=$('mDC').value||today();readMethod(u);save();closeModal();toast('Claimed na ✔ ('+methodLbl(u)+')');renderAll();}
 function delUnpaid(id){const u=DB.unpaid.find(x=>x.id===id);if(!confirm('Burahin si '+u.name+' ('+peso(u.amount)+')?'))return;DB.unpaid=DB.unpaid.filter(x=>x.id!==id);save();renderAll();}
 
 /* ---------- Claimed (editable) ---------- */
@@ -370,13 +486,14 @@ function renderClaimed(){
   const list=DB.unpaid.filter(u=>u.claimed&&(!q||u.name.toLowerCase().includes(q))&&(!f||u.dateClaimed>=f)&&(!t||u.dateClaimed<=t))
     .sort((a,b)=>b.dateClaimed.localeCompare(a.dateClaimed));
   $('cList').innerHTML=list.length?list.map(u=>`<div class="item" style="flex-wrap:wrap"><div class="info"><div class="nm">${esc(u.name)}</div>
-     <div class="meta">Unpaid: ${fdate(u.date)} • Claimed: <b>${fdate(u.dateClaimed)}</b></div></div><div class="amt" style="color:var(--ok)">${peso(u.amount)}</div>
+     <div class="meta">${mPill(u)} Unpaid: ${fdate(u.date)} • Claimed: <b>${fdate(u.dateClaimed)}</b>${u.ref?' • Ref '+esc(u.ref):''}</div></div><div class="amt" style="color:var(--ok)">${peso(u.amount)}</div>
      <div class="acts" style="width:100%"><button class="sm b-ed" onclick="editItem('${u.id}')">Edit</button>
      <button class="sm b-del" onclick="unclaim('${u.id}')">Ibalik sa Unpaid</button></div></div>`).join('')
     :'<div class="empty">Walang claimed sa napiling petsa.</div>';
   $('cTot').textContent=peso(sum(list,u=>u.amount));
+  renderClaimedSum(list);
 }
-function unclaim(id){const u=DB.unpaid.find(x=>x.id===id);if(!confirm('Ibalik si '+u.name+' sa Unpaid?'))return;u.claimed=false;u.dateClaimed='';save();renderAll();toast('Naibalik sa Unpaid');}
+function unclaim(id){const u=DB.unpaid.find(x=>x.id===id);if(!confirm('Ibalik si '+u.name+' sa Unpaid?'))return;u.claimed=false;u.dateClaimed='';u.method='';u.ref='';save();renderAll();toast('Naibalik sa Unpaid');}
 function editItem(id){
   const u=DB.unpaid.find(x=>x.id===id); if(!u)return;
   openSheet(`<h3>Edit ${u.claimed?'Claimed':'Unpaid'}</h3>
@@ -385,6 +502,7 @@ function editItem(id){
    <div class="row"><div><label>Petsa (unpaid)</label><input type="date" id="mD" value="${u.date}"></div>
    <div><label>Date claimed</label><input type="date" id="mDC" value="${u.dateClaimed||''}"></div></div>
    <div class="note">Kapag may Date claimed, mapupunta ito sa Claimed. Kapag blangko, mananatiling Unpaid.</div>
+   ${methodFields(u.method||'Cash',u.ref)}
    <button class="btn" onclick="saveEdit('${id}')">I-save</button>
    <button class="btn ghost" onclick="closeModal()">Kanselahin</button>`);
 }
@@ -392,8 +510,46 @@ function saveEdit(id){
   const u=DB.unpaid.find(x=>x.id===id); const n=$('mN').value.trim(), a=num($('mA').value);
   if(!n||a<=0){toast('Kulang ang detalye');return;}
   u.name=n;u.amount=a;u.date=$('mD').value||u.date;u.dateClaimed=$('mDC').value;u.claimed=!!u.dateClaimed;
+  if(u.claimed)readMethod(u);else{u.method='';u.ref='';}
   save();closeModal();toast('Na-update ✔');renderAll();
 }
+
+/* ---------- Online payments ---------- */
+function addOnline(){
+  const method=$('oMethod').value, amt=num($('oAmt').value), date=$('oDate').value||today();
+  if(amt<=0){toast('Ilagay ang halaga');return;}
+  DB.online.push({id:uid(),method,amount:amt,date,name:$('oName').value.trim(),ref:$('oRef').value.trim()});
+  save(); $('oAmt').value='';$('oName').value='';$('oRef').value=''; toast('Naidagdag ang '+method+' payment'); renderAll();
+}
+function renderOnline(){
+  const d=$('oDate').value||today(); $('oDayLbl').textContent=fdate(d);
+  const c=compute(d,0);
+  $('oSum').innerHTML=`<div class="sumbox">${Object.entries(c.byMethod).map(([m,a])=>kv(esc(m),peso(a))).join('')||kv('Online','₱0.00')}
+    ${kv('Sales na online (ibabawas sa cash)',peso(c.online))}${kv('Claimed na online',peso(c.claimedOn))}
+    ${kv('<b>TOTAL ONLINE</b>',peso(c.onlineRecv),'color:#3949ab')}</div>`;
+  const rows=[...c.onlineItems.map(o=>`<div class="item"><div class="info"><div class="nm">${esc(o.name||'(walang pangalan)')}</div>
+      <div class="meta">${mPill(o)} Sales${o.ref?' • Ref '+esc(o.ref):''}</div></div><div class="amt">${peso(o.amount)}</div>
+      <button class="sm b-ed" onclick="editOnline('${o.id}')">Edit</button></div>`),
+    ...c.claimedOnItems.map(u=>`<div class="item"><div class="info"><div class="nm">${esc(u.name)}</div>
+      <div class="meta">${mPill(u)} Claimed (unpaid mula ${fdate(u.date)})${u.ref?' • Ref '+esc(u.ref):''}</div></div><div class="amt">${peso(u.amount)}</div>
+      <button class="sm b-ed" onclick="editItem('${u.id}')">Edit</button></div>`)];
+  $('oList').innerHTML=rows.length?rows.join(''):'<div class="empty">Walang online payment sa araw na ito.</div>';
+}
+function editOnline(id){
+  const o=DB.online.find(x=>x.id===id);
+  openSheet(`<h3>Edit Online Payment</h3>
+   <label>Paraan ng bayad</label><select id="mM">${ONLINE_METHODS.map(m=>`<option ${m===o.method?'selected':''}>${m}</option>`).join('')}</select>
+   <div class="row"><div><label>Halaga (₱)</label><input id="mA" type="number" inputmode="decimal" step="0.01" value="${o.amount}"></div>
+   <div><label>Petsa</label><input type="date" id="mD" value="${o.date}"></div></div>
+   <label>Pangalan</label><input id="mN" value="${esc(o.name||'')}">
+   <label>Reference no.</label><input id="mRef" value="${esc(o.ref||'')}">
+   <button class="btn" onclick="saveOnline('${id}')">I-save</button>
+   <button class="btn" style="background:var(--bad2);color:var(--bad)" onclick="delOnline('${id}')">Burahin</button>
+   <button class="btn ghost" onclick="closeModal()">Kanselahin</button>`);
+}
+function saveOnline(id){const o=DB.online.find(x=>x.id===id);const a=num($('mA').value);if(a<=0){toast('Ilagay ang halaga');return;}
+  o.method=$('mM').value;o.amount=a;o.date=$('mD').value||o.date;o.name=$('mN').value.trim();o.ref=$('mRef').value.trim();save();closeModal();renderAll();toast('Na-update ✔');}
+function delOnline(id){if(!confirm('Burahin ang online payment?'))return;DB.online=DB.online.filter(x=>x.id!==id);save();closeModal();renderAll();}
 
 /* ---------- Expenses ---------- */
 function addExp(){
@@ -429,15 +585,23 @@ function renderMore(){
   $('sShop').value=DB.settings.shop||'';
 }
 function saveSettings(){DB.settings.shop=$('sShop').value.trim();save();toast('Na-save ✔');renderAll();}
-function backup(){shareText(JSON.stringify(DB),'Laundry Cash Backup '+today());}
+function backup(){saveBytes(new TextEncoder().encode(JSON.stringify(DB)),'LaundryCash_backup_'+today()+'.json','application/json');}
+function backupText(){shareText(JSON.stringify(DB),'Laundry Cash Backup '+today());}
 function openRestore(){
-  openSheet(`<h3>I-restore ang backup</h3><div class="note">I-paste ang buong backup text. Papalitan nito ang lahat ng data sa phone na ito.</div>
-   <textarea id="mR" rows="7" style="margin-top:8px"></textarea>
+  openSheet(`<h3>I-restore ang backup</h3><div class="note">Papalitan nito ang lahat ng data sa phone na ito.</div>
+   <label>Pumili ng backup file (.json)</label>
+   <input type="file" id="mRF" onchange="readRestoreFile(this)">
+   <label>o i-paste ang backup text</label>
+   <textarea id="mR" rows="6"></textarea>
    <button class="btn" onclick="doRestore()">I-restore</button><button class="btn ghost" onclick="closeModal()">Kanselahin</button>`);
+}
+function readRestoreFile(inp){
+  const f=inp.files&&inp.files[0]; if(!f)return;
+  const r=new FileReader(); r.onload=()=>{$('mR').value=r.result;toast('Nabasa ang file — pindutin ang I-restore');}; r.readAsText(f);
 }
 function doRestore(){
   try{const d=JSON.parse($('mR').value);if(!d||!Array.isArray(d.unpaid))throw 0;
-    if(!confirm('Papalitan ang lahat ng data. Ituloy?'))return; DB={unpaid:d.unpaid||[],expenses:d.expenses||[],reports:d.reports||[],settings:d.settings||{shop:''}};save();closeModal();renderAll();toast('Na-restore ✔');}
+    if(!confirm('Papalitan ang lahat ng data. Ituloy?'))return; DB={unpaid:d.unpaid||[],expenses:d.expenses||[],online:d.online||[],reports:d.reports||[],settings:d.settings||{shop:''}};save();closeModal();renderAll();toast('Na-restore ✔');}
   catch(e){toast('Mali ang backup text');}
 }
 
@@ -445,15 +609,266 @@ function doRestore(){
 function openSheet(h){$('sheet').innerHTML=h;$('modal').classList.add('on');}
 function closeModal(){$('modal').classList.remove('on');}
 
+
+/* =====================================================================
+   v1.1 — Summaries + Excel export
+   ===================================================================== */
+const APP_VERSION='1.2';
+const r2=n=>Math.round(n*100)/100;
+const daysAgo=(d,ref)=>Math.max(0,Math.round((new Date(ref||today())-new Date(d))/864e5));
+const MONTHS=['Enero','Pebrero','Marso','Abril','Mayo','Hunyo','Hulyo','Agosto','Setyembre','Oktubre','Nobyembre','Disyembre'];
+const monthName=ym=>{const [y,m]=ym.split('-');return MONTHS[+m-1]+' '+y;};
+const kv=(k,v,st)=>`<div class="kv"><span>${k}</span><b${st?` style="${st}"`:''}>${v}</b></div>`;
+
+/* ---- Outstanding unpaid (all time) with aging ---- */
+function outstanding(){
+  const open=DB.unpaid.filter(u=>!u.claimed).sort((a,b)=>a.date.localeCompare(b.date));
+  const B=[{l:'0–7 araw',n:0,a:0},{l:'8–30 araw',n:0,a:0},{l:'31+ araw',n:0,a:0}];
+  open.forEach(u=>{const d=daysAgo(u.date);const i=d<=7?0:d<=30?1:2;B[i].n++;B[i].a+=num(u.amount);});
+  // grouped per customer
+  const g={};open.forEach(u=>{const k=u.name.trim().toLowerCase();(g[k]=g[k]||{name:u.name.trim(),n:0,a:0,oldest:u.date});g[k].n++;g[k].a+=num(u.amount);if(u.date<g[k].oldest)g[k].oldest=u.date;});
+  const byCust=Object.values(g).sort((a,b)=>b.a-a.a);
+  return {open,n:open.length,amt:r2(sum(open,u=>u.amount)),buckets:B,oldest:open[0],byCust};
+}
+function renderUnpaidSum(){
+  const o=outstanding();
+  let h=`<div class="sumbox">${kv('Bilang ng unpaid pa',o.n)}${kv('Kabuuang unpaid pa',peso(o.amt),'color:var(--bad)')}
+    ${kv('Pinakaluma',o.oldest?esc(o.oldest.name)+' • '+daysAgo(o.oldest.date)+' araw':'—')}
+    <div class="aging">${o.buckets.map(b=>`<div>${b.l}<b>${peso(b.a)}</b>${b.n} tao</div>`).join('')}</div></div>`;
+  const multi=o.byCust.filter(c=>c.n>1);
+  if(multi.length) h+=`<div class="note" style="margin-bottom:4px">May higit sa isang unpaid:</div>`+
+    multi.map(c=>kv(esc(c.name)+` <span class="note">(${c.n}x)</span>`,peso(c.a))).join('');
+  $('uSum').innerHTML=h;
+}
+function renderClaimedSum(list){
+  const n=list.length, tot=r2(sum(list,u=>u.amount));
+  const avg=n?Math.round(list.reduce((s,u)=>s+daysAgo(u.date,u.dateClaimed),0)/n):0;
+  const f=$('cFrom').value,t=$('cTo').value;
+  const rng=(f||t)?((f?fdate(f):'simula')+' – '+(t?fdate(t):'ngayon')):'Lahat ng petsa';
+  const cash=list.filter(isCash), onl=list.filter(u=>!isCash(u)), bm={};
+  onl.forEach(u=>{bm[u.method]=(bm[u.method]||0)+num(u.amount);});
+  $('cSum').innerHTML=`<div class="sumbox">${kv('Saklaw',rng)}${kv('Bilang ng claimed',n)}
+    ${kv('Kabuuang claimed',peso(tot),'color:var(--ok)')}
+    ${kv('↳ Cash ('+cash.length+')',peso(sum(cash,u=>u.amount)))}
+    ${kv('↳ Online ('+onl.length+')',peso(sum(onl,u=>u.amount)),'color:#3949ab')}
+    ${Object.entries(bm).map(([m,a])=>kv('&nbsp;&nbsp;&nbsp;'+esc(m),peso(a))).join('')}
+    ${kv('Average na araw bago nabayaran',n?avg+' araw':'—')}</div>`;
+}
+
+/* ---- Month data ---- */
+function monthData(ym){
+  const dates=new Set();
+  DB.reports.forEach(r=>{if(r.date.startsWith(ym))dates.add(r.date);});
+  DB.unpaid.forEach(u=>{if(u.date.startsWith(ym))dates.add(u.date);if(u.claimed&&(u.dateClaimed||'').startsWith(ym))dates.add(u.dateClaimed);});
+  DB.expenses.forEach(e=>{if(e.date.startsWith(ym))dates.add(e.date);});
+  DB.online.forEach(o=>{if(o.date.startsWith(ym))dates.add(o.date);});
+  const days=[...dates].sort().map(d=>{const r=reportFor(d);const c=compute(d,r?r.sales:0);c.staff=r?(r.staff||''):'';c.hasReport=!!r;return c;});
+  const T=k=>r2(days.reduce((s,c)=>s+c[k],0));
+  const tot={sales:T('sales'),unpaid:T('unpaid'),claimed:T('claimed'),claimedOn:T('claimedOn'),online:T('online'),onlineRecv:T('onlineRecv'),
+    exp:T('exp'),coh:T('coh'),reports:days.filter(c=>c.hasReport).length};
+  tot.byMethod={}; days.forEach(c=>Object.entries(c.byMethod).forEach(([m,a])=>{tot.byMethod[m]=r2((tot.byMethod[m]||0)+a);}));
+  const repDays=days.filter(c=>c.hasReport);
+  tot.avg=repDays.length?r2(tot.sales/repDays.length):0;
+  const best=repDays.reduce((b,c)=>!b||c.sales>b.sales?c:b,null);
+  const unpaidM=DB.unpaid.filter(u=>u.date.startsWith(ym)).sort((a,b)=>a.date.localeCompare(b.date));
+  const claimedM=DB.unpaid.filter(u=>u.claimed&&(u.dateClaimed||'').startsWith(ym)).sort((a,b)=>a.dateClaimed.localeCompare(b.dateClaimed));
+  const stillM=unpaidM.filter(u=>!u.claimed);
+  const expM=DB.expenses.filter(e=>e.date.startsWith(ym)).sort((a,b)=>a.date.localeCompare(b.date));
+  const onlineM=DB.online.filter(o=>o.date.startsWith(ym)).sort((a,b)=>a.date.localeCompare(b.date));
+  return {ym,days,tot,best,unpaidM,claimedM,stillM,expM,onlineM};
+}
+function renderSum(){
+  const ym=$('mMonth').value||today().slice(0,7), M=monthData(ym), t=M.tot;
+  $('sTot').innerHTML=`<div class="sumbox">${kv('Total Sales',peso(t.sales))}${kv('Less: Unpaid','('+peso(t.unpaid)+')','color:var(--bad)')}
+    ${kv('Add: Claimed (Cash)',peso(t.claimed),'color:var(--ok)')}${kv('Less: Online Payment','('+peso(t.online)+')','color:var(--bad)')}
+    ${kv('Less: Expenses','('+peso(t.exp)+')','color:var(--bad)')}
+    ${kv('<b>TOTAL CASH ON HAND</b>','<span style="font-size:17px">'+peso(t.coh)+'</span>')}</div>
+    <div class="sumbox"><b style="color:#3949ab">Online na natanggap</b>
+    ${Object.entries(t.byMethod).map(([m,a])=>kv(esc(m),peso(a))).join('')}
+    ${kv('Sales na online',peso(t.online))}${kv('Claimed na online',peso(t.claimedOn))}
+    ${kv('<b>TOTAL ONLINE</b>',peso(t.onlineRecv),'color:#3949ab')}</div>
+    ${kv('Araw na may report',t.reports)}${kv('Average na sales kada araw',peso(t.avg))}
+    ${kv('Pinakamataas na sales',M.best?peso(M.best.sales)+' ('+fdate(M.best.date)+')':'—')}`;
+  const sh=d=>{const [,m,dd]=d.split('-');return (+m)+'/'+(+dd);};
+  $('sTbl').innerHTML=M.days.length?`<tr><th>Petsa</th><th>Sales</th><th>Unpaid</th><th>Claim</th><th>Online</th><th>Exp.</th><th>Cash</th></tr>`+
+    M.days.map(c=>`<tr class="${c.hasReport?'':'nr'}" onclick="openReport('${c.date}')"><td>${sh(c.date)}${c.hasReport?'':' *'}</td>
+      <td>${nf(c.sales)}</td><td>${nf(c.unpaid)}</td><td>${nf(c.claimed)}</td><td>${nf(c.online)}</td><td>${nf(c.exp)}</td><td><b>${nf(c.coh)}</b></td></tr>`).join('')+
+    `<tr class="tt"><td>TOTAL</td><td>${nf(t.sales)}</td><td>${nf(t.unpaid)}</td><td>${nf(t.claimed)}</td><td>${nf(t.online)}</td><td>${nf(t.exp)}</td><td>${nf(t.coh)}</td></tr>`
+    :'<tr><td class="empty">Walang record sa buwang ito.</td></tr>';
+  const o=outstanding();
+  $('sUC').innerHTML=`<div class="sumbox">${kv('Bagong unpaid ngayong buwan',M.unpaidM.length+' • '+peso(sum(M.unpaidM,u=>u.amount)))}
+    ${kv('Na-claim ngayong buwan',M.claimedM.length+' • '+peso(sum(M.claimedM,u=>u.amount)),'color:var(--ok)')}
+    ${kv('Unpaid ngayong buwan na hindi pa bayad',M.stillM.length+' • '+peso(sum(M.stillM,u=>u.amount)),'color:var(--bad)')}</div>
+    ${kv('Lahat ng unpaid pa (kahit anong buwan)',o.n+' • '+peso(o.amt),'color:var(--bad)')}
+    ${M.days.some(c=>!c.hasReport)?'<div class="note">* walang na-save na report (Total Sales) sa araw na iyon</div>':''}`;
+}
+function nf(n){n=Number(n)||0;const d=Math.round(n)===n?0:2;return n.toLocaleString('en-PH',{minimumFractionDigits:d,maximumFractionDigits:2});}
+
+/* ---- Excel (.xlsx) writer, no internet needed ---- */
+const H=v=>({v,s:1}), MON=v=>({v:r2(num(v)),s:2}), MONB=v=>({v:r2(num(v)),s:3}), B=v=>({v,s:4});
+function xmlEsc(x){return String(x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function colL(i){let s='';i++;while(i>0){const m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=Math.floor((i-1)/26);}return s;}
+function sheetXml(sh){
+  const rows=sh.rows.map((r,ri)=>'<row r="'+(ri+1)+'">'+r.map((c,ci)=>{
+    if(c===null||c===undefined||c==='')return '';
+    const o=(typeof c==='object')?c:{v:c}, ref=colL(ci)+(ri+1), st=o.s?' s="'+o.s+'"':'';
+    if(typeof o.v==='number')return '<c r="'+ref+'"'+st+'><v>'+o.v+'</v></c>';
+    return '<c r="'+ref+'"'+st+' t="inlineStr"><is><t xml:space="preserve">'+xmlEsc(o.v)+'</t></is></c>';
+  }).join('')+'</row>').join('');
+  const cols=sh.cols?'<cols>'+sh.cols.map((w,i)=>'<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+w+'" customWidth="1"/>').join('')+'</cols>':'';
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'+cols+'<sheetData>'+rows+'</sheetData></worksheet>';
+}
+const CRCT=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function crc32(b){let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=CRCT[(c^b[i])&0xFF]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+function zipStore(files){
+  const enc=new TextEncoder(), parts=[], central=[]; let off=0;
+  files.forEach(f=>{
+    const nm=enc.encode(f.name), d=(typeof f.data==='string')?enc.encode(f.data):f.data, crc=crc32(d);
+    const h=new DataView(new ArrayBuffer(30));
+    h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(12,0x21,true);
+    h.setUint32(14,crc,true);h.setUint32(18,d.length,true);h.setUint32(22,d.length,true);h.setUint16(26,nm.length,true);
+    parts.push(new Uint8Array(h.buffer),nm,d);
+    const c=new DataView(new ArrayBuffer(46));
+    c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(14,0x21,true);
+    c.setUint32(16,crc,true);c.setUint32(20,d.length,true);c.setUint32(24,d.length,true);c.setUint16(28,nm.length,true);c.setUint32(42,off,true);
+    central.push(new Uint8Array(c.buffer),nm);
+    off+=30+nm.length+d.length;
+  });
+  const cd=central.reduce((s,a)=>s+a.length,0), e=new DataView(new ArrayBuffer(22));
+  e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cd,true);e.setUint32(16,off,true);
+  const all=[...parts,...central,new Uint8Array(e.buffer)], out=new Uint8Array(all.reduce((s,a)=>s+a.length,0));
+  let p=0; all.forEach(a=>{out.set(a,p);p+=a.length;}); return out;
+}
+function makeXlsx(sheets){
+  const NS='http://schemas.openxmlformats.org', X='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+  const styles=X+'<styleSheet xmlns="'+NS+'/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;₱&quot;#,##0.00"/></numFmts>'+
+   '<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>'+
+   '<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFDCE8F7"/><bgColor indexed="64"/></patternFill></fill></fills>'+
+   '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'+
+   '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'+
+   '<cellXfs count="5"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'+
+   '<xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/>'+
+   '<xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>'+
+   '<xf numFmtId="164" fontId="1" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/>'+
+   '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs>'+
+   '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+  const files=[
+    {name:'[Content_Types].xml',data:X+'<Types xmlns="'+NS+'/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>'+
+      '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'+
+      '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+
+      sheets.map((s,i)=>'<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join('')+'</Types>'},
+    {name:'_rels/.rels',data:X+'<Relationships xmlns="'+NS+'/package/2006/relationships"><Relationship Id="rId1" Type="'+NS+'/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'},
+    {name:'xl/workbook.xml',data:X+'<workbook xmlns="'+NS+'/spreadsheetml/2006/main" xmlns:r="'+NS+'/officeDocument/2006/relationships"><sheets>'+
+      sheets.map((s,i)=>'<sheet name="'+xmlEsc(s.name)+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>').join('')+'</sheets></workbook>'},
+    {name:'xl/_rels/workbook.xml.rels',data:X+'<Relationships xmlns="'+NS+'/package/2006/relationships">'+
+      sheets.map((s,i)=>'<Relationship Id="rId'+(i+1)+'" Type="'+NS+'/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>').join('')+
+      '<Relationship Id="rId'+(sheets.length+1)+'" Type="'+NS+'/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'},
+    {name:'xl/styles.xml',data:styles},
+    ...sheets.map((s,i)=>({name:'xl/worksheets/sheet'+(i+1)+'.xml',data:sheetXml(s)}))
+  ];
+  return zipStore(files);
+}
+const XLSX_MIME='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+function saveBytes(bytes,name,mime){
+  if(window.Android&&Android.saveFile){
+    let s='';for(let i=0;i<bytes.length;i+=0x8000)s+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));
+    Android.saveFile(btoa(s),name,mime);return;
+  }
+  const url=URL.createObjectURL(new Blob([bytes],{type:mime})), a=document.createElement('a');
+  a.href=url;a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},1500);toast('Na-download: '+name);
+}
+const shopName=()=>DB.settings.shop||'Laundry';
+
+/* ---- Sheet builders ---- */
+function sheetOutstanding(){
+  const o=outstanding();
+  const rows=[[B(shopName()+' — Lahat ng Unpaid pa (as of '+fdate(today())+')')],[],
+    [H('Pangalan'),H('Halaga'),H('Petsa ng Unpaid'),H('Ilang araw na'),H('Date Claimed')],
+    ...o.open.map(u=>[u.name,MON(u.amount),u.date,daysAgo(u.date),'']),
+    [B('TOTAL ('+o.n+')'),MONB(o.amt)],[],
+    [H('Aging'),H('Halaga'),H('Bilang')],...o.buckets.map(b=>[b.l,MON(b.a),b.n])];
+  if(o.byCust.length){rows.push([],[H('Per customer'),H('Kabuuan'),H('Bilang'),H('Pinakaluma')]);o.byCust.forEach(c=>rows.push([c.name,MON(c.a),c.n,c.oldest]));}
+  return {name:'Unpaid (lahat)',cols:[26,14,16,14,16],rows};
+}
+function sheetClaimed(list,title){
+  const cash=list.filter(isCash), onl=list.filter(u=>!isCash(u));
+  return {name:'Claimed',cols:[26,14,16,16,18,16,18],rows:[[B(title)],[],
+    [H('Pangalan'),H('Halaga'),H('Petsa ng Unpaid'),H('Date Claimed'),H('Araw bago nabayaran'),H('Paano nagbayad'),H('Reference no.')],
+    ...list.map(u=>[u.name,MON(u.amount),u.date,u.dateClaimed,daysAgo(u.date,u.dateClaimed),methodLbl(u),u.ref||'']),
+    [B('TOTAL ('+list.length+')'),MONB(sum(list,u=>u.amount))],
+    ['Cash ('+cash.length+')',MON(sum(cash,u=>u.amount))],['Online ('+onl.length+')',MON(sum(onl,u=>u.amount))]]};
+}
+function sheetOnline(M,mn){
+  const t=M.tot, onCl=M.claimedM.filter(u=>!isCash(u));
+  const rows=[[B(shopName()+' — Online Payments, '+mn)],[],
+    [H('Petsa'),H('Paraan'),H('Halaga'),H('Uri'),H('Pangalan'),H('Reference no.')],
+    ...[...M.onlineM.map(o=>[o.date,o.method,MON(o.amount),'Sales',o.name||'',o.ref||'']),
+        ...onCl.map(u=>[u.dateClaimed,u.method,MON(u.amount),'Claimed',u.name,u.ref||''])].sort((a,b)=>a[0].localeCompare(b[0])),
+    [B('TOTAL'),'',MONB(t.onlineRecv)],[],
+    [H('Per paraan'),H('Halaga')],...Object.entries(t.byMethod).map(([m,a])=>[m,MON(a)]),
+    ['Sales na online',MON(t.online)],['Claimed na online',MON(t.claimedOn)]];
+  return {name:'Online',cols:[13,16,14,10,24,18],rows};
+}
+function exportOnline(){
+  const ym=($('oDate').value||today()).slice(0,7), M=monthData(ym);
+  saveBytes(makeXlsx([sheetOnline(M,monthName(ym))]),'Online_'+ym+'.xlsx',XLSX_MIME);
+}
+function exportUnpaid(){
+  saveBytes(makeXlsx([sheetOutstanding()]),'Unpaid_'+today()+'.xlsx',XLSX_MIME);
+}
+function exportClaimed(){
+  const q=$('cSearch').value.trim().toLowerCase(), f=$('cFrom').value, t=$('cTo').value;
+  const list=DB.unpaid.filter(u=>u.claimed&&(!q||u.name.toLowerCase().includes(q))&&(!f||u.dateClaimed>=f)&&(!t||u.dateClaimed<=t))
+    .sort((a,b)=>a.dateClaimed.localeCompare(b.dateClaimed));
+  const rng=(f||t)?((f?fdate(f):'simula')+' – '+(t?fdate(t):fdate(today()))):'Lahat';
+  saveBytes(makeXlsx([sheetClaimed(list,shopName()+' — Claimed ('+rng+')')]),'Claimed_'+(f||'lahat')+'_'+(t||today())+'.xlsx',XLSX_MIME);
+}
+function exportMonth(){
+  const ym=$('mMonth').value||today().slice(0,7), M=monthData(ym), t=M.tot, mn=monthName(ym), o=outstanding();
+  const summary={name:'Summary',cols:[38,18],rows:[
+    [B(shopName()+' — Monthly Summary')],[B(mn)],[],
+    [H('Total Sales'),MON(t.sales)],[H('Less: Unpaid'),MON(-t.unpaid)],[H('Add: Claimed (Cash)'),MON(t.claimed)],
+    [H('Less: Online Payment'),MON(-t.online)],[H('Less: Expenses'),MON(-t.exp)],
+    [B('TOTAL CASH ON HAND'),MONB(t.coh)],[],
+    ['Araw na may report',t.reports],['Average na sales kada araw',MON(t.avg)],
+    ['Pinakamataas na sales',M.best?M.best.sales:0,M.best?M.best.date:''],[],
+    [B('Unpaid at Claimed')],
+    ['Bagong unpaid ngayong buwan ('+M.unpaidM.length+')',MON(sum(M.unpaidM,u=>u.amount))],
+    ['Na-claim ngayong buwan ('+M.claimedM.length+')',MON(sum(M.claimedM,u=>u.amount))],
+    ['Unpaid ngayong buwan na hindi pa bayad ('+M.stillM.length+')',MON(sum(M.stillM,u=>u.amount))],
+    ['Lahat ng unpaid pa, kahit anong buwan ('+o.n+')',MON(o.amt)],[],
+    ['Ginawa: '+fdate(today())]]};
+  if(M.best)summary.rows[12][1]=MON(M.best.sales);
+  summary.rows.splice(summary.rows.length-1,0,[B('Online na natanggap')],
+    ...Object.entries(t.byMethod).map(([m,a])=>[m,MON(a)]),
+    ['Sales na online',MON(t.online)],['Claimed na online',MON(t.claimedOn)],[B('TOTAL ONLINE'),MONB(t.onlineRecv)],[]);
+  const daily={name:'Daily Sales',cols:[13,18,14,14,16,16,14,16,15,12],rows:[[B(shopName()+' — Daily Sales, '+mn)],[],
+    [H('Petsa'),H('Staff'),H('Total Sales'),H('Less: Unpaid'),H('Add: Claimed (Cash)'),H('Less: Online Payment'),H('Less: Expenses'),H('Cash on Hand'),H('Total Online'),H('May report?')],
+    ...M.days.map(c=>[c.date,c.staff,MON(c.sales),MON(c.unpaid),MON(c.claimed),MON(c.online),MON(c.exp),MON(c.coh),MON(c.onlineRecv),c.hasReport?'Oo':'Wala']),
+    [B('TOTAL'),'',MONB(t.sales),MONB(t.unpaid),MONB(t.claimed),MONB(t.online),MONB(t.exp),MONB(t.coh),MONB(t.onlineRecv)]]};
+  const unp={name:'Unpaid',cols:[26,14,16,16,12],rows:[[B('Unpaid na naitala — '+mn)],[],
+    [H('Pangalan'),H('Halaga'),H('Petsa ng Unpaid'),H('Date Claimed'),H('Status')],
+    ...M.unpaidM.map(u=>[u.name,MON(u.amount),u.date,u.claimed?u.dateClaimed:'',u.claimed?'Claimed':'Unpaid']),
+    [B('TOTAL ('+M.unpaidM.length+')'),MONB(sum(M.unpaidM,u=>u.amount))]]};
+  const exp={name:'Expenses',cols:[13,30,14],rows:[[B('Expenses — '+mn)],[],
+    [H('Petsa'),H('Para saan'),H('Halaga')],...M.expM.map(e=>[e.date,e.desc,MON(e.amount)]),
+    [B('TOTAL ('+M.expM.length+')'),'',MONB(sum(M.expM,e=>e.amount))]]};
+  saveBytes(makeXlsx([summary,daily,unp,sheetClaimed(M.claimedM,'Na-claim — '+mn),sheetOnline(M,mn),exp,sheetOutstanding()]),
+    'LaundryCash_'+ym+'.xlsx',XLSX_MIME);
+}
+
 /* ---------- Init ---------- */
 function renderAll(){
   $('hdrTitle').textContent=DB.settings.shop||'Laundry Cash';
-  renderDash();renderUnpaid();renderClaimed();renderExp();renderMore();
+  renderDash();renderUnpaid();renderClaimed();renderOnline();renderExp();renderMore();renderSum();
   if($('p-report').classList.contains('on'))renderReport();
 }
 load();
 $('hdrDate').textContent=new Date().toLocaleDateString('fil-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-$('rDate').value=today();$('uDate').value=today();$('eDate').value=today();
+$('oMethod').innerHTML=ONLINE_METHODS.map(m=>'<option>'+m+'</option>').join('');
+$('rDate').value=today();$('uDate').value=today();$('eDate').value=today();$('oDate').value=today();$('mMonth').value=today().slice(0,7);
+$('verLbl').textContent='Laundry Cash v'+APP_VERSION;
 loadReportForm();renderAll();
 </script>
 </body>

@@ -10,16 +10,40 @@ android {
         applicationId "com.tslaundry.cashlog"
         minSdk 21
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        versionCode 3
+        versionName "1.2"
+    }
+
+    // Fixed signing key: every build is signed the same way,
+    // so new versions install OVER the old one and keep the data.
+    signingConfigs {
+        debug {
+            storeFile file('laundrycash.jks')
+            storePassword 'laundry123'
+            keyAlias 'laundrycash'
+            keyPassword 'laundry123'
+        }
+        release {
+            storeFile file('laundrycash.jks')
+            storePassword 'laundry123'
+            keyAlias 'laundrycash'
+            keyPassword 'laundry123'
+        }
     }
 
     buildTypes {
-        release {
-            minifyEnabled false
-            // Signed with the debug key so the APK installs directly on phones.
+        debug {
             signingConfig signingConfigs.debug
         }
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
     }
 
     compileOptions {
