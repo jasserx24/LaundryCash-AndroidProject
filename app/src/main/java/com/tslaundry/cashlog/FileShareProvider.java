@@ -33,6 +33,8 @@ public class FileShareProvider extends ContentProvider {
         if (n.endsWith(".xlsx")) return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
         if (n.endsWith(".json")) return "application/json";
         if (n.endsWith(".csv")) return "text/csv";
+        if (n.endsWith(".png")) return "image/png";
+        if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
         return "application/octet-stream";
     }
 

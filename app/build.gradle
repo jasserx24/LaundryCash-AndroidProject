@@ -10,8 +10,8 @@ android {
         applicationId "com.tslaundry.cashlog"
         minSdk 21
         targetSdk 34
-        versionCode 13
-        versionName "2.8"
+        versionCode 15
+        versionName "3.0"
     }
 
     // Fixed signing key: every build is signed the same way,

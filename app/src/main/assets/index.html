@@ -88,6 +88,14 @@
   .sheet h3{margin:0 0 6px}
   .toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:#263238;color:#fff;padding:10px 16px;border-radius:20px;font-size:14px;display:none;z-index:30;max-width:90vw;text-align:center}
   .note{font-size:12px;color:var(--muted);margin-top:6px}
+  .qrv{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;z-index:40;align-items:center;justify-content:center;padding:14px}
+  .qrv.on{display:flex}
+  .qrbox{background:#fff;border-radius:18px;padding:16px;width:100%;max-width:440px;max-height:94vh;overflow:auto;text-align:center}
+  .qrbox img{width:100%;max-width:380px;border-radius:8px;image-rendering:pixelated}
+  .qrtabs{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:10px}
+  .qrtabs button{padding:7px 12px;font-size:13px;border-radius:20px;background:var(--pri2);color:var(--pri)}
+  .qrtabs button.on{background:var(--pri);color:#fff}
+  .qrthumb{width:64px;height:64px;object-fit:contain;border:1px solid var(--line);border-radius:8px;background:#fff}
 </style>
 </head>
 <body>
@@ -126,6 +134,7 @@
       <div class="note" id="dUncolSub"></div>
       <button class="btn ghost" onclick="go('coll')">💰 Collect cash</button>
     </div>
+    <div class="card"><h2>Customers</h2><div id="dCust"></div><button class="btn ghost" onclick="go('cust')">👥 Customer history</button></div>
     <div class="card"><h2>Recent reports</h2><div id="dHist"></div></div>
     <div class="note" style="text-align:center;margin:4px 0 8px" id="homeCredit"></div>
   </section>
@@ -140,6 +149,8 @@
       </div>
       <label>Total Sales (₱)</label>
       <input id="rSales" type="number" inputmode="decimal" step="0.01" placeholder="0.00" oninput="renderReport()">
+      <label>Redeemed points (₱) — deducted from Total Sales</label>
+      <input id="rPts" type="number" inputmode="decimal" step="0.01" placeholder="0.00" oninput="renderReport()">
       <div class="note">Unpaid, Claimed, Online and Expenses are taken automatically from the lists for this date. Once saved, the report is locked and will not change.</div>
     </div>
     <div class="card">
@@ -217,6 +228,7 @@
     </div>
     <div class="card">
       <h2>Online received on <span id="oDayLbl"></span></h2>
+      <button class="btn ghost" style="margin:0 0 10px" onclick="showQR()">📱 Show payment QR</button>
       <div id="oSum"></div><div id="oList"></div>
       <button class="btn ghost" onclick="exportOnline()">⬇ Export this month's online to Excel</button>
     </div>
@@ -244,6 +256,26 @@
       <div id="eList"></div>
       <div id="eSub"></div>
       <div class="tot"><span>Total expenses</span><span id="eTot">₱0.00</span></div>
+    </div>
+  </section>
+
+  <!-- CUSTOMERS -->
+  <section class="page" id="p-cust">
+    <div class="card">
+      <h2>👥 Customer history</h2>
+      <div class="note" style="margin-top:-6px">Built from records with a customer name: unpaid, online sales, and cash records below. Sorted by the biggest total.</div>
+      <div class="row"><div><label>From</label><input type="date" id="qFrom" onchange="renderCust()"></div><div><label>To</label><input type="date" id="qTo" onchange="renderCust()"></div></div>
+      <input id="qSearch" placeholder="Search name or claim stub #…" oninput="renderCust()" style="margin-top:8px">
+      <button class="btn ghost" onclick="exportCust()">⬇ Export customers to Excel</button>
+    </div>
+    <div class="card"><h2>Customers <span class="pill gr" id="qCount">0</span></h2><div id="qList"></div></div>
+    <div class="card">
+      <h2>Add a cash customer record</h2>
+      <div class="note" style="margin-top:-6px">For customer history only — this does NOT change the report (Total Sales already includes it). Unpaid and online sales are added automatically.</div>
+      <label>Customer name</label><input id="qName" list="custList" placeholder="e.g. Maria Santos" autocomplete="off">
+      <div class="row"><div><label>Claim stub #</label><input id="qStub"></div><div><label>Amount (₱)</label><input id="qAmt" type="number" inputmode="decimal" step="0.01"></div></div>
+      <label>Date</label><input type="date" id="qDate">
+      <button class="btn" onclick="addCustLog()">+ Add to customer history</button>
     </div>
   </section>
 
@@ -289,7 +321,8 @@
     <div class="card">
       <h2>Daily sales</h2>
       <div style="overflow-x:auto"><table class="tbl" id="sTbl"></table></div>
-      <div class="note">🔒 locked report • * no report saved (not included in totals) • ⚠ records changed after saving. Claim = cash claims only. Coll. = collected. Left = cash on hand minus what was taken later for expenses and what was collected. Swipe left to see all columns. Tap a date to open its report.</div>
+      <div style="font-weight:700;margin-top:12px">Why is the left cash lower?</div><div id="sWhy"></div>
+      <div class="note">🔒 locked report • * no report saved (not included in totals) • ⚠ records changed after saving. Pts = redeemed points. Claim = cash claims only. Taken = cash taken later for expenses (see below). Coll. = collected. Left = cash on hand minus what was taken later for expenses and what was collected. Swipe left to see all columns. Tap a date to open its report.</div>
     </div>
     <div class="card"><h2>Expenses this month</h2><div id="sExp"></div></div>
     <div class="card"><h2>Unpaid and claimed this month</h2><div id="sUC"></div></div>
@@ -297,6 +330,7 @@
 
   <!-- MORE -->
   <section class="page" id="p-more">
+    <button class="btn ghost" style="margin:0 0 12px" onclick="go('cust')">👥 Customer history</button>
     <div class="card"><h2>All reports (history)</h2><div id="hList"></div></div>
     <div class="card">
       <h2>Settings</h2>
@@ -306,6 +340,19 @@
       <label style="margin-top:16px">Owner PIN (needed to unlock saved reports and to restore backups)</label>
       <div id="pinState" class="note" style="margin-top:0"></div>
       <div id="pinBtns"></div>
+    </div>
+    <div class="card">
+      <h2>📱 Payment QR codes</h2>
+      <div class="note" style="margin-top:-6px">Add your GCash / Maya / bank QR so customers can scan it from this phone or you can send it to them.</div>
+      <div id="qrList"></div>
+      <div class="split">
+        <b>Add a QR code</b>
+        <div class="row"><div><label>For</label><select id="qrM"></select></div>
+        <div><label>Account name</label><input id="qrN" placeholder="e.g. J. Santos"></div></div>
+        <label>Account / mobile number (optional)</label><input id="qrNo" placeholder="e.g. 0917 123 4567">
+        <label>QR image (screenshot or photo of your QR)</label><input type="file" id="qrF" accept="image/*">
+        <button class="btn" onclick="addQR()">+ Save QR code</button>
+      </div>
     </div>
     <div class="card">
       <h2>Backup</h2>
@@ -330,14 +377,15 @@
 </nav>
 
 <div class="modal" id="modal" onclick="if(event.target===this)closeModal()"><div class="sheet" id="sheet"></div></div>
+<div class="qrv" id="qrView" onclick="if(event.target===this)closeQR()"><div class="qrbox" id="qrBox"></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
 /* ================= Basics ================= */
-const APP_VERSION='2.8';
+const APP_VERSION='3.0';
 const KEY='laundry_cash_v1';
 const ONLINE_METHODS=['GCash','Maya','Bank Transfer','Other online'];
-let DB={unpaid:[],expenses:[],online:[],reports:[],collections:[],settings:{shop:'',pin:''}};
+let DB={unpaid:[],expenses:[],online:[],reports:[],collections:[],custlog:[],settings:{shop:'',pin:''}};
 
 const $=id=>document.getElementById(id);
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
@@ -372,7 +420,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){toast
 function fixMethod(m){return (m==='Iba pa (online)')?'Other online':m;}
 function normalize(){
   let changed=false;
-  DB.unpaid=DB.unpaid||[];DB.expenses=DB.expenses||[];DB.online=DB.online||[];DB.reports=DB.reports||[];DB.collections=DB.collections||[];
+  DB.unpaid=DB.unpaid||[];DB.expenses=DB.expenses||[];DB.online=DB.online||[];DB.reports=DB.reports||[];DB.collections=DB.collections||[];DB.custlog=DB.custlog||[];
   DB.settings=Object.assign({shop:'',pin:''},DB.settings||{});
   DB.unpaid.forEach(u=>{
     if(u.claimed&&!Array.isArray(u.payments)){u.payments=[{method:fixMethod(u.method||'Cash'),amount:num(u.amount),ref:u.ref||''}];changed=true;}
@@ -383,7 +431,7 @@ function normalize(){
   });
   DB.online.forEach(o=>{const m=fixMethod(o.method);if(m!==o.method){o.method=m;changed=true;}});
   // Reports saved by older versions: lock them with today's figures
-  DB.reports.forEach(r=>{if(!r.snap){r.snap=snapshot(compute(r.date,r.sales));r.locked=true;r.savedAt=r.savedAt||Date.now();changed=true;}});
+  DB.reports.forEach(r=>{if(!r.snap){r.snap=snapshot(compute(r.date,r.sales,r.points));r.locked=true;r.savedAt=r.savedAt||Date.now();changed=true;}});
   return changed;
 }
 
@@ -416,12 +464,15 @@ function takenFrom(d,excl){return r2(DB.expenses.filter(e=>e.id!==excl&&e.date!=
 function collectedFrom(d,excl){return r2((DB.collections||[]).filter(c=>c.id!==excl).reduce((s,c)=>s+sum(c.items.filter(i=>i.date===d),i=>i.amount),0));}
 // Cash of a saved day that is still in hand: cash on hand − taken for later expenses − collected
 function cashLeft(d){const r=reportFor(d);return r&&r.snap?r2(r.snap.coh-takenFrom(d)-collectedFrom(d)):0;}
+// which expenses took cash from day d (paid on another day)
+function takenDetail(d){const out=[];DB.expenses.forEach(e=>{if(e.date===d)return;srcs(e).forEach(x=>{if(x.date===d&&num(x.amount)>0)out.push({desc:e.desc,paid:e.date,amount:num(x.amount)});});});
+  return out.sort((a,b)=>a.paid.localeCompare(b.paid));}
 function srcText(e){const o=oldParts(e);if(!o.length)return '';
   return 'From '+o.map(x=>fdate(x.date).replace(/, \d{4}$/,'')+' '+peso(x.amount)).join(' + ')+(selfPart(e)>0?' + this date '+peso(selfPart(e)):'');}
 
 /* ================= Core computation =================
    Cash on Hand = Total Sales − Unpaid + Claimed (cash) − Online payments − Expenses */
-function compute(date,sales){
+function compute(date,sales,points){
   const U=DB.unpaid.filter(u=>u.date===date);
   // payments received on this date (full or partial)
   const C=DB.unpaid.filter(u=>pays(u).some(p=>p.date===date)).map(u=>{const ps=pays(u).filter(p=>p.date===date);
@@ -432,9 +483,9 @@ function compute(date,sales){
   const exp=r2(sum(E,selfPart)), expOld=r2(sum(E,oldSum)), online=r2(sum(O,o=>o.amount));
   const byMethod={}, addM=(m,a)=>{if(num(a)>0)byMethod[m]=r2((byMethod[m]||0)+num(a));};
   O.forEach(o=>addM(o.method,o.amount)); C.forEach(x=>x.ps.forEach(p=>{if(p.method!=='Cash')addM(p.method,p.amount);}));
-  sales=num(sales);
-  return {date,sales,unpaid,claimed,claimedOn,online,onlineRecv:r2(online+claimedOn),byMethod,exp,expOld,
-    coh:r2(sales-unpaid+claimed-online-exp),
+  sales=num(sales); points=num(points);
+  return {date,sales,points,unpaid,claimed,claimedOn,online,onlineRecv:r2(online+claimedOn),byMethod,exp,expOld,
+    coh:r2(sales-points-unpaid+claimed-online-exp),
     unpaidItems:U.map(u=>({id:u.id,name:u.name,stub:u.stub||'',amount:num(u.amount),claimed:!!u.claimed,dateClaimed:u.dateClaimed||''})),
     claimedItems:C.map(({u,ps,after})=>({id:u.id,name:u.name,stub:u.stub||'',amount:r2(sum(ps,p=>p.amount)),total:num(u.amount),balance:Math.max(0,after),date:u.date,
       payments:ps.map(p=>({method:p.method,amount:num(p.amount),ref:p.ref||''}))})),
@@ -452,7 +503,7 @@ function dayView(d){
   const v=compute(d,0);v.saved=false;v.locked=false;v.staff='';v.changed=false;return v;
 }
 function changedSinceSave(r){
-  const L=compute(r.date,r.sales),S=r.snap;
+  const L=compute(r.date,r.sales,r.points),S=r.snap;
   return ['unpaid','claimed','claimedOn','online','exp','coh'].some(k=>Math.abs((L[k]||0)-(S[k]||0))>0.004);
 }
 // After changing records, tell the user if a locked report was NOT changed
@@ -472,14 +523,14 @@ function diffList(o,n,label,desc){
   return out;
 }
 function changeReasons(r){
-  const L=compute(r.date,r.sales),S=r.snap||{};
+  const L=compute(r.date,r.sales,r.points),S=r.snap||{};
   return [...diffList(S.unpaidItems,L.unpaidItems,'Unpaid',x=>x.name+stubTxt(x)+' '+peso(x.amount)),
     ...diffList(S.claimedItems,L.claimedItems,'Claimed',x=>x.name+stubTxt(x)+' '+peso(x.amount)+' ('+payText(x.payments)+')'+(x.balance>0?' partial':'')),
     ...diffList(S.onlineItems,L.onlineItems,'Online payment',x=>x.method+' '+peso(x.amount)+(x.name?' – '+x.name:'')),
     ...diffList(S.expItems,L.expItems,'Expense',x=>x.desc+' '+peso(x.amount))];
 }
 function changeBox(r,title,footer){
-  const L=compute(r.date,r.sales),S=r.snap,rs=changeReasons(r);
+  const L=compute(r.date,r.sales,r.points),S=r.snap,rs=changeReasons(r);
   const fig=[['Unpaid','unpaid'],['Claimed (Cash)','claimed'],['Online payment','online'],['Expenses','exp'],['Cash on hand','coh']]
     .filter(([,k])=>Math.abs((L[k]||0)-(S[k]||0))>0.004).map(([l,k])=>`${l}: ${peso(S[k])} → <b>${peso(L[k])}</b>`);
   return `<div class="warn"><b>${title}</b><br>${rs.length?rs.map(esc).join('<br>'):'Some records were edited.'}
@@ -542,6 +593,9 @@ function renderDash(){
   const bm=Object.entries(v.byMethod||{});
   $('dOnlB').innerHTML=bm.length?bm.map(([m,a])=>esc(m)+': <b style="color:var(--ink)">'+peso(a)+'</b>').join('<br>'):'None yet';
   const o=outstanding(); $('dUnpN').textContent=o.n; $('dUnpA').textContent=peso(o.amt);
+  const TG=(()=>{const g={};custVisits().forEach(x=>{const k=normName(x.name);if(!k)return;(g[k]=g[k]||{name:x.name.trim(),t:0,n:0});g[k].t+=x.amount;g[k].n++;});
+    return Object.values(g).sort((a,b)=>b.t-a.t).slice(0,3);})();
+  $('dCust').innerHTML=TG.length?TG.map((c,i)=>kv(['🥇','🥈','🥉'][i]+' '+esc(c.name)+' <span class="note">('+c.n+'x)</span>',peso(c.t))).join(''):'<div class="note">No named customer records yet.</div>';
   const ud=uncollectedDays(); $('dUncol').textContent=peso(sum(ud,cashLeft));
   const lastC=[...(DB.collections||[])].sort((a,b)=>(b.date+b.at).localeCompare(a.date+a.at))[0];
   $('dUncolSub').textContent=(ud.length?ud.length+' day(s) not yet collected'+(ud.length?' (since '+fdate(ud[0])+')':''):'All saved days are collected')+(lastC?' • Last collection '+fdate(lastC.date)+' by '+lastC.name:'');
@@ -559,11 +613,11 @@ function openReport(d){go('report');$('rDate').value=d;loadReportForm();}
 /* ================= Report ================= */
 function loadReportForm(){
   const d=$('rDate').value||today(), r=reportFor(d);
-  $('rSales').value=r?r.sales:''; $('rStaff').value=r?(r.staff||''):'';
+  $('rSales').value=r?r.sales:''; $('rPts').value=r&&r.points?r.points:''; $('rStaff').value=r?(r.staff||''):'';
   renderReport();
 }
 function reportLines(c){
-  return [['Total Sales',peso(c.sales),''],['Less: Unpaid','('+peso(c.unpaid)+')','neg'],['Add: Claimed (Cash)',peso(c.claimed),'pos'],
+  return [['Total Sales',peso(c.sales),''],['Less: Redeemed points','('+peso(c.points||0)+')','neg'],['Less: Unpaid','('+peso(c.unpaid)+')','neg'],['Add: Claimed (Cash)',peso(c.claimed),'pos'],
     ['Less: Online Payment','('+peso(c.online)+')','neg'],['Less: Expenses','('+peso(c.exp)+')','neg']];
 }
 function reportHtml(c,d,staff){
@@ -590,16 +644,18 @@ function reportText(c,staff){
 }
 function currentReport(){
   const d=$('rDate').value||today(), r=reportFor(d), mode=!r?'new':(isLocked(r)?'locked':'edit');
-  const c=mode==='new'?compute(d,$('rSales').value):r.snap;          // unlocked = still shows the SAVED report
+  const c=mode==='new'?compute(d,$('rSales').value,$('rPts').value):r.snap;          // unlocked = still shows the SAVED report
   return {d,r,mode,c,staff:mode==='new'?$('rStaff').value.trim():(r.staff||'')};
 }
 // Everything that will change when an unlocked report is saved again
-function pendingChanges(r,salesIn,staffIn){
-  const L=compute(r.date,salesIn), S=r.snap, lines=[];
+function pendingChanges(r,salesIn,staffIn,ptsIn){
+  if(ptsIn===undefined)ptsIn=r.points||0;
+  const L=compute(r.date,salesIn,ptsIn), S=r.snap, lines=[];
   if(Math.abs(num(salesIn)-num(S.sales))>0.004)lines.push('✏️ Total Sales changed: '+peso(S.sales)+' → '+peso(salesIn));
+  if(Math.abs(num(ptsIn)-num(S.points))>0.004)lines.push('✏️ Redeemed points changed: '+peso(S.points||0)+' → '+peso(ptsIn));
   if((staffIn||'')!==(r.staff||''))lines.push('✏️ Staff changed: '+(r.staff||'—')+' → '+(staffIn||'—'));
   lines.push(...changeReasons(r));
-  const figs=[['Total Sales','sales'],['Unpaid','unpaid'],['Claimed (Cash)','claimed'],['Online payment','online'],['Expenses','exp'],['Cash on hand','coh']]
+  const figs=[['Total Sales','sales'],['Redeemed points','points'],['Unpaid','unpaid'],['Claimed (Cash)','claimed'],['Online payment','online'],['Expenses','exp'],['Cash on hand','coh']]
     .filter(([,k])=>Math.abs((L[k]||0)-(S[k]||0))>0.004).map(([l,k])=>({l,from:S[k]||0,to:L[k]||0}));
   return {L,lines,figs};
 }
@@ -620,7 +676,7 @@ function historyOf(r){
 const editCount=r=>historyOf(r).filter(h=>h.type==='edited').length;
 function renderReport(){
   const {d,r,mode,c,staff}=currentReport(), locked=mode==='locked';
-  $('rSales').disabled=locked; $('rStaff').disabled=locked;
+  $('rSales').disabled=locked; $('rStaff').disabled=locked; $('rPts').disabled=locked;
   let bar='';
   if(locked){
     const H=historyOf(r), ed=H.filter(h=>h.type==='edited'), last=ed[ed.length-1];
@@ -628,13 +684,13 @@ function renderReport(){
       ${ed.length?`<br><b>Edited ${ed.length} time(s).</b> Last change ${fdt(last.at)}${last.staff?' by '+esc(last.staff):''} — <b>Reason:</b> ${esc(last.reason||'—')}<br>See "Change history" below.`:'<br>No changes since it was saved.'}</div></div>`;
     if(changedSinceSave(r))bar+=changeBox(r,'⚠ Records for this date changed after the report was saved:','The saved report was NOT changed. Unlock it if you want to update it.');
   } else if(mode==='edit'){
-    const P=pendingChanges(r,$('rSales').value,$('rStaff').value.trim());
+    const P=pendingChanges(r,$('rSales').value,$('rStaff').value.trim(),$('rPts').value);
     bar=`<div class="lockbar edit">🔓<div>Unlocked. The report below still shows the <b>SAVED</b> figures — nothing is recalculated until you tap "Save changes &amp; lock". You will be asked for the reason.</div></div>
       <div class="warn" style="background:#fff8e1;color:#7a5d00"><b>Pending changes (applied when you save):</b><br>
       ${P.lines.length?P.lines.map(esc).join('<br>'):'No changes yet.'}
       ${P.figs.length?'<div style="margin-top:6px;border-top:1px dashed #e0c36a;padding-top:6px">'+P.figs.map(f=>esc(f.l)+': '+peso(f.from)+' → <b>'+peso(f.to)+'</b>').join('<br>')+'</div>':''}</div>`;
   }
-  const chkC=mode==='edit'?compute(d,$('rSales').value):c;
+  const chkC=mode==='edit'?compute(d,$('rSales').value,$('rPts').value):c;
   if(!locked&&$('rSales').value!==''&&chkC.coh<0)bar+=`<div class="warn">⚠ Cash on hand would be negative (${peso(chkC.coh)}). The report can't be saved like this — check Total Sales, or take part of the expenses from previous days' sales (Expenses → Split).</div>`;
   $('rBar').innerHTML=bar;
   if(r){$('rHistCard').style.display='block';$('rHist').innerHTML=[...historyOf(r)].reverse().map(histEntry).join('');}
@@ -656,7 +712,10 @@ function renderReport(){
 function saveReport(){
   const d=$('rDate').value||today(), v=$('rSales').value;
   if(v===''){toast('Enter Total Sales');$('rSales').focus();return;}
-  const chk=compute(d,v);
+  const pts=num($('rPts').value);
+  if(pts<0){toast('Redeemed points cannot be negative');return;}
+  if(pts>num(v)){toast('Redeemed points cannot be more than Total Sales');return;}
+  const chk=compute(d,v,pts);
   if(chk.coh<0){
     openSheet(`<h3>⚠ Cash on hand can't be negative</h3>
      <div class="note">The report for ${fdate(d)} would show <b style="color:var(--bad)">${peso(chk.coh)}</b>. That means more money went out than came in today.</div>
@@ -678,18 +737,18 @@ function saveReport(){
   const staff=$('rStaff').value.trim();
   let r=reportFor(d);
   if(!r){
-    r={id:uid(),date:d,sales:num(v),staff,snap:snapshot(chk),locked:true,savedAt:Date.now()};
+    r={id:uid(),date:d,sales:num(v),points:pts,staff,snap:snapshot(chk),locked:true,savedAt:Date.now()};
     r.history=[{type:'created',at:r.savedAt,staff,to:{coh:chk.coh}}];
     DB.reports.push(r);save();toast('Report saved and locked 🔒');renderAll();renderReport();return;
   }
-  const P=pendingChanges(r,v,staff);
+  const P=pendingChanges(r,v,staff,pts);
   if(!P.lines.length&&!P.figs.length){cancelEdit();return;}
   window._saveEdit=()=>{
     const reason=$('mWhy').value.trim();
     if(reason.length<3){toast('Please type the reason for the change');$('mWhy').focus();return;}
     if(!r.history||!r.history.length)r.history=[{type:'created',at:r.savedAt,staff:r.staff,to:{coh:r.snap.coh}}];
     r.history.push({type:'edited',at:Date.now(),staff,reason,changes:P.lines,figs:P.figs});
-    r.sales=num(v);r.staff=staff;r.snap=snapshot(chk);r.locked=true;r.savedAt=Date.now();
+    r.sales=num(v);r.points=pts;r.staff=staff;r.snap=snapshot(chk);r.locked=true;r.savedAt=Date.now();
     closeModal();save();toast('Changes saved and report locked 🔒');renderAll();renderReport();
   };
   openSheet(`<h3>Save changes to ${fdate(d)} report?</h3>
@@ -711,7 +770,7 @@ function unlockReport(){
     <button class="btn warnb" onclick="closeModal();window._unlockCb&&window._unlockCb()">Yes, unlock</button><button class="btn ghost" onclick="closeModal()">Cancel</button>`);
 }
 function cancelEdit(){const r=reportFor($('rDate').value||today());if(!r)return;
-  const P=pendingChanges(r,r.sales,r.staff);
+  const P=pendingChanges(r,r.sales,r.staff,r.points||0);
   if(P.lines.length&&!window._forceCancel){
     openSheet(`<h3>Keep the old report?</h3><div class="note">Records were changed while the report was unlocked:</div>
      <div class="sumbox" style="margin-top:8px;font-size:13px">${P.lines.map(esc).join('<br>')}</div>
@@ -837,19 +896,23 @@ function payFields(total,ps){
   const on=has?r2(sum(ps.filter(p=>p.method!=='Cash'),p=>p.amount)):0;
   return `<div class="split"><b>How did they pay?</b>
    <div class="row" style="margin-top:8px"><button type="button" class="sm b-ok" onclick="setPay('cash')">All cash</button>
+   <button type="button" class="sm b-ed" onclick="setPay('split')">Cash + online</button>
    <button type="button" class="sm b-ed" onclick="setPay('online')">All online</button></div>
    <div class="row"><div><label>Cash (₱)</label><input id="pCash" type="number" inputmode="decimal" step="0.01" value="${cash}" oninput="payAuto('cash')"></div>
    <div><label>Online (₱)</label><input id="pOn" type="number" inputmode="decimal" step="0.01" value="${on}" oninput="payAuto('on')"></div></div>
-   <div class="row"><div><label>Online via</label><select id="pM">${ONLINE_METHODS.map(m=>`<option ${m===onP.method?'selected':''}>${m}</option>`).join('')}</select></div>
+   <div class="row"><div><label>Online via</label><select id="pM" onchange="payCheck()">${ONLINE_METHODS.map(m=>`<option ${m===onP.method?'selected':''}>${m}</option>`).join('')}</select></div>
    <div><label>Reference no.</label><input id="pRef" inputmode="numeric" value="${esc(onP.ref||'')}"></div></div>
    <div class="note" id="pChk"></div>
-   <div class="note">Split payment: type the cash part — the online part fills in automatically. Cash is added to Cash on Hand; online is shown under "Online received".</div></div>`;
+   <button type="button" class="sm b-ed" style="margin-top:8px;width:100%" onclick="showQR(num($('pOn').value)||payTotal(),$('pM').value)">📱 Show QR to customer</button>
+   <div class="note">Split payment (e.g. ₱250 = ₱200 cash + ₱50 GCash): tap "Cash + online", type the cash part — the online part fills in automatically. Cash is added to Cash on Hand; online is shown under "Online received".</div></div>`;
 }
-function setPay(k){const t=payTotal();$('pCash').value=k==='cash'?t:0;$('pOn').value=k==='cash'?0:t;payCheck();}
+function setPay(k){const t=payTotal();
+  if(k==='split'){$('pCash').value='';$('pOn').value=t;payCheck();$('pCash').focus();toast('Type the cash part — the rest goes to online',3000);return;}
+  $('pCash').value=k==='cash'?t:0;$('pOn').value=k==='cash'?0:t;payCheck();}
 function payAuto(which){const t=payTotal();
   if(which==='cash')$('pOn').value=r2(Math.max(0,t-num($('pCash').value)));else $('pCash').value=r2(Math.max(0,t-num($('pOn').value)));payCheck();}
 function payCheck(){const t=payTotal(),c=num($('pCash').value),o=num($('pOn').value),ok=Math.abs(c+o-t)<0.005;
-  $('pChk').innerHTML=ok?`✔ Cash ${peso(c)} + Online ${peso(o)} = ${peso(t)}`:`<b style="color:var(--bad)">⚠ Cash + Online must equal ${peso(t)} (now ${peso(c+o)})</b>`;return ok;}
+  $('pChk').innerHTML=ok?`✔ Cash <b>${peso(c)}</b> + ${o>0?esc($('pM').value):'Online'} <b>${peso(o)}</b> = ${peso(t)}${c>0&&o>0?' <span class="pill on">SPLIT</span>':''}`:`<b style="color:var(--bad)">⚠ Cash + Online must equal ${peso(t)} (now ${peso(c+o)})</b>`;return ok;}
 function readPays(){
   if(!payCheck()){toast('Cash + Online must equal the amount');return null;}
   const c=num($('pCash').value),o=num($('pOn').value);
@@ -1154,7 +1217,7 @@ function monthData(ym){
   DB.online.forEach(o=>{if(o.date.startsWith(ym))dates.add(o.date);});
   const days=[...dates].sort().map(d=>{const v=dayView(d);v.date=d;if(v.saved){v.taken=takenFrom(d);v.collected=collectedFrom(d);v.left=r2(v.coh-v.taken-v.collected);}return v;});
   const sv=days.filter(c=>c.saved), T=k=>r2(sv.reduce((s,c)=>s+(c[k]||0),0));
-  const tot={sales:T('sales'),unpaid:T('unpaid'),claimed:T('claimed'),claimedOn:T('claimedOn'),online:T('online'),onlineRecv:T('onlineRecv'),exp:T('exp'),coh:T('coh'),
+  const tot={sales:T('sales'),points:T('points'),unpaid:T('unpaid'),claimed:T('claimed'),claimedOn:T('claimedOn'),online:T('online'),onlineRecv:T('onlineRecv'),exp:T('exp'),coh:T('coh'),
     taken:T('taken'),collected:T('collected'),left:T('left'),expOld:T('expOld'),reports:sv.length,byMethod:{}};
   sv.forEach(c=>Object.entries(c.byMethod||{}).forEach(([m,a])=>{tot.byMethod[m]=r2((tot.byMethod[m]||0)+a);}));
   const rep=days.filter(c=>c.saved); tot.avg=rep.length?r2(tot.sales/rep.length):0;
@@ -1169,7 +1232,7 @@ function monthData(ym){
 const dayStatus=c=>!c.saved?'No report':(c.changed?'Changed after save':(c.locked?'Locked':'Unlocked'));
 function renderSum(){
   const ym=$('mMonth').value||today().slice(0,7), M=monthData(ym), t=M.tot;
-  $('sTot').innerHTML=`<div class="sumbox">${kv('Total Sales',peso(t.sales))}${kv('Less: Unpaid','('+peso(t.unpaid)+')','color:var(--bad)')}
+  $('sTot').innerHTML=`<div class="sumbox">${kv('Total Sales',peso(t.sales))}${kv('Less: Redeemed points','('+peso(t.points)+')','color:var(--bad)')}${kv('Less: Unpaid','('+peso(t.unpaid)+')','color:var(--bad)')}
     ${kv('Add: Claimed (Cash)',peso(t.claimed),'color:var(--ok)')}${kv('Less: Online Payment','('+peso(t.online)+')','color:var(--bad)')}
     ${kv('Less: Expenses','('+peso(t.exp)+')','color:var(--bad)')}
     ${kv('<b>TOTAL CASH ON HAND</b>','<span style="font-size:17px">'+peso(t.coh)+'</span>')}
@@ -1183,12 +1246,21 @@ function renderSum(){
     ${kv('Highest sales',M.best?peso(M.best.sales)+' ('+fdate(M.best.date)+')':'—')}`;
   const sh=d=>{const [,m,dd]=d.split('-');return (+m)+'/'+(+dd);};
   const mark=c=>!c.saved?' *':(c.changed?' ⚠':(c.locked?' 🔒':' 🔓'));
-  $('sTbl').innerHTML=M.days.length?`<tr><th>Date</th><th>Sales</th><th>Unpaid</th><th>Claim</th><th>Online</th><th>Exp.</th><th>Cash</th><th>Coll.</th><th>Left</th></tr>`+
+  $('sTbl').innerHTML=M.days.length?`<tr><th>Date</th><th>Sales</th><th>Pts</th><th>Unpaid</th><th>Claim</th><th>Online</th><th>Exp.</th><th>Cash</th><th>Taken</th><th>Coll.</th><th>Left</th></tr>`+
     [...M.days].reverse().map(c=>`<tr class="${c.saved?'':'nr'}" onclick="openReport('${c.date}')"><td>${sh(c.date)}${mark(c)}</td>
-      <td>${c.saved?nf(c.sales):'—'}</td><td>${nf(c.unpaid)}</td><td>${nf(c.claimed)}</td><td>${nf(c.online)}</td><td>${nf(c.exp)}</td>
-      <td><b>${c.saved?nf(c.coh):'—'}</b></td><td>${c.saved?nf(c.collected):'—'}</td><td>${c.saved?nf(c.left):'—'}</td></tr>`).join('')+
-    `<tr class="tt"><td>TOTAL</td><td>${nf(t.sales)}</td><td>${nf(t.unpaid)}</td><td>${nf(t.claimed)}</td><td>${nf(t.online)}</td><td>${nf(t.exp)}</td><td>${nf(t.coh)}</td><td>${nf(t.collected)}</td><td>${nf(t.left)}</td></tr>`
+      <td>${c.saved?nf(c.sales):'—'}</td><td>${c.saved?nf(c.points||0):'—'}</td><td>${nf(c.unpaid)}</td><td>${nf(c.claimed)}</td><td>${nf(c.online)}</td><td>${nf(c.exp)}</td>
+      <td><b>${c.saved?nf(c.coh):'—'}</b></td><td style="${c.taken?'color:var(--bad)':''}">${c.saved?nf(c.taken):'—'}</td><td>${c.saved?nf(c.collected):'—'}</td><td>${c.saved?nf(c.left):'—'}</td></tr>`).join('')+
+    `<tr class="tt"><td>TOTAL</td><td>${nf(t.sales)}</td><td>${nf(t.points)}</td><td>${nf(t.unpaid)}</td><td>${nf(t.claimed)}</td><td>${nf(t.online)}</td><td>${nf(t.exp)}</td><td>${nf(t.coh)}</td><td>${nf(t.taken)}</td><td>${nf(t.collected)}</td><td>${nf(t.left)}</td></tr>`
     :'<tr><td class="empty">No records this month.</td></tr>';
+  // ---- Why "Left" is lower: what was taken from each day's cash ----
+  const why=[...M.days].filter(c=>c.saved&&(c.taken>0||c.collected>0)).reverse();
+  $('sWhy').innerHTML=why.length?why.map(c=>{
+    const parts=takenDetail(c.date), cols=(DB.collections||[]).filter(k=>k.items.some(i=>i.date===c.date));
+    return `<div class="split" style="margin-top:8px"><div style="font-weight:700">${sh(c.date)}</div><div class="kv"><span>Cash on hand</span><b>${peso(c.coh)}</b></div>
+      ${parts.map(x=>`<div class="kv"><span>➖ Taken for <b>${esc(x.desc)}</b><br><small class="note">expense paid ${fdate(x.paid)}</small></span><b style="color:var(--bad)">${peso(x.amount)}</b></div>`).join('')}
+      ${cols.map(k=>`<div class="kv"><span>➖ Collected by <b>${esc(k.name)}</b><br><small class="note">${fdate(k.date)}</small></span><b style="color:var(--bad)">${peso(sum(k.items.filter(i=>i.date===c.date),i=>i.amount))}</b></div>`).join('')}
+      <div class="kv"><b>Left</b><b style="color:var(--ok)">${peso(c.left)}</b></div></div>`;}).join('')
+    :'<div class="note">No cash was taken or collected from this month\'s days.</div>';
   // ---- Expenses this month, with the daily sales each was paid from ----
   const short=d=>fdate(d).replace(/, \d{4}$/,'');
   const eT=r2(sum(M.expM,e=>e.amount)), eSelf=r2(sum(M.expM,selfPart)), eOld=r2(sum(M.expM,oldSum));
@@ -1217,6 +1289,7 @@ function renderMore(){
   const reps=[...DB.reports].sort((a,b)=>b.date.localeCompare(a.date));
   $('hList').innerHTML=reps.length?reps.map(histRow).join(''):'<div class="empty">No reports yet.</div>';
   if(document.activeElement!==$('sShop'))$('sShop').value=DB.settings.shop||'';
+  renderQRs();
   $('pinState').textContent=DB.settings.pin?'🔑 PIN is set.':'No PIN set — anyone can unlock saved reports.';
   $('pinBtns').innerHTML=DB.settings.pin
     ?`<button class="btn ghost" onclick="setPinSheet()">Change PIN</button><button class="btn red" onclick="removePin()">Remove PIN</button>`
@@ -1237,7 +1310,7 @@ function doRestore(){
   try{const d=JSON.parse($('mR').value);if(!d||!Array.isArray(d.unpaid))throw 0;
     if(!confirm('Replace all data on this phone?'))return;
     const keepPin=DB.settings.pin;
-    DB={unpaid:d.unpaid||[],expenses:d.expenses||[],online:d.online||[],reports:d.reports||[],collections:d.collections||[],settings:Object.assign({shop:'',pin:''},d.settings||{})};
+    DB={unpaid:d.unpaid||[],expenses:d.expenses||[],online:d.online||[],reports:d.reports||[],collections:d.collections||[],custlog:d.custlog||[],settings:Object.assign({shop:'',pin:''},d.settings||{})};
     if(!DB.settings.pin&&keepPin)DB.settings.pin=keepPin;
     normalize();save();closeModal();renderAll();toast('Restored ✔');}
   catch(e){toast('Invalid backup');}
@@ -1320,6 +1393,106 @@ function saveBytes(bytes,name,mime){
 }
 
 const shopName=()=>DB.settings.shop||'Laundry';
+
+/* ================= Payment QR codes ================= */
+const qrs=()=>DB.settings.qrs||(DB.settings.qrs=[]);
+function renderQRs(){
+  if(!$('qrM').options.length)$('qrM').innerHTML=ONLINE_METHODS.map(m=>'<option>'+m+'</option>').join('');
+  $('qrList').innerHTML=qrs().length?qrs().map(q=>`<div class="item"><img class="qrthumb" src="${q.img}" alt="QR">
+     <div class="info"><div class="nm">${esc(q.method)}</div><div class="meta">${esc(q.name||'')}${q.number?' • '+esc(q.number):''}</div></div>
+     <button class="sm b-ed" onclick="showQR(0,'${esc(q.method)}','${q.id}')">View</button>
+     <button class="sm b-del" onclick="delQR('${q.id}')">Delete</button></div>`).join('')
+    :'<div class="empty">No QR codes yet.</div>';
+}
+function addQR(){
+  const f=$('qrF').files&&$('qrF').files[0]; if(!f){toast('Choose the QR image');return;}
+  const rd=new FileReader();
+  rd.onload=()=>{const im=new Image();im.onload=()=>{
+      const M=900,sc=Math.min(1,M/Math.max(im.width,im.height)),c=document.createElement('canvas');
+      c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);const x=c.getContext('2d');
+      x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.imageSmoothingEnabled=false;x.drawImage(im,0,0,c.width,c.height);
+      let data=c.toDataURL('image/png'); if(data.length>700000)data=c.toDataURL('image/jpeg',0.92);
+      qrs().push({id:uid(),method:$('qrM').value,name:$('qrN').value.trim(),number:$('qrNo').value.trim(),img:data});
+      $('qrF').value='';$('qrN').value='';$('qrNo').value='';done('QR code saved 📱');};
+    im.onerror=()=>toast('Could not read that image');im.src=rd.result;};
+  rd.readAsDataURL(f);
+}
+function delQR(id){pinGate('Delete QR code',()=>{DB.settings.qrs=qrs().filter(q=>q.id!==id);done('QR code deleted');});}
+let _qrAmt=0;
+function showQR(amount,method,id){
+  const L=qrs(); if(!L.length){toast('No QR code yet — add one in ☰ → Payment QR codes',4000);return;}
+  _qrAmt=num(amount);
+  const q=L.find(x=>x.id===id)||L.find(x=>x.method===method)||L[0];
+  $('qrBox').innerHTML=`${L.length>1?`<div class="qrtabs">${L.map(x=>`<button class="${x.id===q.id?'on':''}" onclick="showQR(_qrAmt,'','${x.id}')">${esc(x.method)}</button>`).join('')}</div>`:''}
+    <div style="font-size:20px;font-weight:800;color:var(--pri)">${esc(q.method)}</div>
+    ${_qrAmt>0?`<div style="font-size:30px;font-weight:800;margin:4px 0">${peso(_qrAmt)}</div>`:''}
+    <img src="${q.img}" alt="Payment QR">
+    <div style="font-weight:700;margin-top:8px">${esc(q.name||'')}</div>
+    ${q.number?`<div style="font-size:18px;letter-spacing:1px">${esc(q.number)}</div>`:''}
+    <div class="note">${esc(DB.settings.shop||'')} • Scan to pay, then show the reference number.</div>
+    <button class="btn ghost" onclick="shareQR('${q.id}')">Send QR to customer (share)</button>
+    <button class="btn" onclick="closeQR()">Close</button>`;
+  $('qrView').classList.add('on');
+}
+function closeQR(){$('qrView').classList.remove('on');}
+function shareQR(id){
+  const q=qrs().find(x=>x.id===id), m=q.img.match(/^data:(image\/\w+);base64,(.*)$/); if(!m)return;
+  const bin=atob(m[2]),b=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)b[i]=bin.charCodeAt(i);
+  saveBytes(b,'Pay_'+q.method.replace(/\W+/g,'_')+(m[1]==='image/png'?'.png':'.jpg'),m[1]);
+}
+
+/* ================= Customers ================= */
+function custVisits(){
+  const v=[];
+  DB.unpaid.forEach(u=>v.push({id:u.id,name:u.name,stub:u.stub||'',date:u.date,amount:num(u.amount),
+    type:u.claimed?'Unpaid → paid':(isPartial(u)?'Unpaid (partial)':'Unpaid'),bal:balOf(u),src:'u'}));
+  DB.online.forEach(o=>{if((o.name||'').trim())v.push({id:o.id,name:o.name,stub:'',date:o.date,amount:num(o.amount),type:o.method,bal:0,src:'o'});});
+  (DB.custlog||[]).forEach(c=>v.push({id:c.id,name:c.name,stub:c.stub||'',date:c.date,amount:num(c.amount),type:'Cash',bal:0,src:'c'}));
+  return v;
+}
+function custGroups(){
+  const f=$('qFrom').value,t=$('qTo').value,q=($('qSearch').value||'').trim().toLowerCase(), g={};
+  custVisits().filter(x=>(!f||x.date>=f)&&(!t||x.date<=t)).forEach(x=>{
+    const k=normName(x.name); if(!k)return;
+    (g[k]=g[k]||{name:x.name.trim(),visits:[],total:0,bal:0}); g[k].visits.push(x); g[k].total=r2(g[k].total+x.amount); g[k].bal=r2(g[k].bal+x.bal);});
+  return Object.values(g).map(c=>{c.visits.sort(newest);c.last=c.visits[0].date;return c;})
+    .filter(c=>!q||c.name.toLowerCase().includes(q)||c.visits.some(v=>(v.stub||'').toLowerCase().includes(q.replace(/^#/,''))))
+    .sort((a,b)=>b.total-a.total||b.visits.length-a.visits.length);
+}
+function renderCust(){
+  const G=custGroups(); $('qCount').textContent=G.length;
+  $('qList').innerHTML=G.length?G.map((c,i)=>`<div class="item" onclick="viewCust('${esc(normName(c.name))}')"><div class="info">
+      <div class="nm">${i<3?['🥇','🥈','🥉'][i]+' ':''}${esc(c.name)}</div>
+      <div class="meta">${c.visits.length} laundry visit(s) • last ${fdate(c.last)}${c.bal>0?` • <b style="color:var(--bad)">balance ${peso(c.bal)}</b>`:''}</div></div>
+      <div class="amt">${peso(c.total)}</div></div>`).join(''):'<div class="empty">No customer records yet.</div>';
+  if(!$('qDate').value)$('qDate').value=today();
+}
+function viewCust(key){
+  const c=custGroups().find(x=>normName(x.name)===key); if(!c)return;
+  openSheet(`<h3>👥 ${esc(c.name)}</h3>
+   <div class="sumbox" style="margin-top:6px">${kv('Laundry visits',c.visits.length)}${kv('<b>Total amount</b>',peso(c.total))}
+     ${kv('Average per visit',peso(c.total/c.visits.length))}${kv('Last visit',fdate(c.last))}${c.bal>0?kv('Unpaid balance',peso(c.bal),'color:var(--bad)'):''}</div>
+   ${c.visits.map(v=>`<div class="item"><div class="info"><div class="nm">${fdate(v.date)}${v.stub?' <span class="pill gr">#'+esc(v.stub)+'</span>':''}</div>
+     <div class="meta"><span class="pill ${v.src==='u'?(v.bal>0?'':'ok'):'on'}">${esc(v.type)}</span>${v.bal>0?' balance '+peso(v.bal):''}</div></div>
+     <div class="amt">${peso(v.amount)}</div>${v.src==='c'?`<button class="sm b-del" onclick="delCustLog('${v.id}')">Delete</button>`:''}</div>`).join('')}
+   <button class="btn ghost" onclick="closeModal()">Close</button>`);
+}
+function addCustLog(){
+  const name=$('qName').value.trim(), amt=num($('qAmt').value), date=$('qDate').value||today();
+  if(!name){toast('Enter the customer name');return;} if(amt<=0){toast('Enter the amount');return;}
+  DB.custlog.push({id:uid(),name,stub:$('qStub').value.trim().replace(/^#/,''),amount:amt,date,createdAt:Date.now()});
+  $('qName').value='';$('qAmt').value='';$('qStub').value='';done('Added to '+name+"'s history");
+}
+function delCustLog(id){DB.custlog=DB.custlog.filter(x=>x.id!==id);closeModal();done('Record deleted');}
+function exportCust(){
+  const G=custGroups(), f=$('qFrom').value, t=$('qTo').value, rng=(f||t)?((f||'start')+' to '+(t||today())):'All dates';
+  const rows=[[B(shopName()+' — Customer history ('+rng+')')],[],[H('Rank'),H('Customer'),H('Visits'),H('Total amount'),H('Average'),H('Last visit'),H('Unpaid balance')],
+    ...G.map((c,i)=>[i+1,c.name,c.visits.length,MON(c.total),MON(c.total/c.visits.length),c.last,MON(c.bal)]),
+    [B('TOTAL ('+G.length+')'),'',sum(G,c=>c.visits.length),MONB(sum(G,c=>c.total)),'','',MONB(sum(G,c=>c.bal))]];
+  const det=[[B('All visits')],[],[H('Customer'),H('Date'),H('Claim stub #'),H('Amount'),H('Type'),H('Balance')]];
+  G.forEach(c=>c.visits.forEach(v=>det.push([c.name,v.date,v.stub||'',MON(v.amount),v.type,MON(v.bal)])));
+  saveBytes(makeXlsx([{name:'Customers',cols:[7,26,8,14,12,12,14],rows},{name:'Visits',cols:[26,12,12,13,18,12],rows:det}]),'Customers_'+today()+'.xlsx',XLSX_MIME);
+}
 
 /* ================= Collection ================= */
 function dateList(a,b){const out=[];let d=new Date(a+'T00:00:00');const e=new Date(b+'T00:00:00');
@@ -1446,7 +1619,7 @@ function exportClaimed(){
 function exportMonth(){
   const ym=$('mMonth').value||today().slice(0,7), M=monthData(ym), t=M.tot, mn=monthName(ym), o=outstanding();
   const S=[[B(shopName()+' — Monthly summary')],[B(mn)],[],
-    [H('Total Sales'),MON(t.sales)],[H('Less: Unpaid'),MON(-t.unpaid)],[H('Add: Claimed (Cash)'),MON(t.claimed)],
+    [H('Total Sales'),MON(t.sales)],[H('Less: Redeemed points'),MON(-t.points)],[H('Less: Unpaid'),MON(-t.unpaid)],[H('Add: Claimed (Cash)'),MON(t.claimed)],
     [H('Less: Online Payment'),MON(-t.online)],[H('Less: Expenses'),MON(-t.exp)],[B('TOTAL CASH ON HAND'),MONB(t.coh)],
     ['Taken later for expenses (e.g. salary)',MON(-t.taken)],['Collected',MON(-t.collected)],[B('Cash not yet collected'),MONB(t.left)],[],
     [B('Online received')],...Object.entries(t.byMethod).map(([m,a])=>[m,MON(a)]),
@@ -1462,12 +1635,12 @@ function exportMonth(){
     ["This month's unpaid still not paid ("+M.stillM.length+')',MON(sum(M.stillM,u=>u.amount))],
     ['All outstanding unpaid, any month ('+o.n+')',MON(o.amt)],[],
     ['Totals include only days with a saved report, using the locked report figures.'],['Generated: '+fdate(today())],['Laundry Cash v'+APP_VERSION+' — '+CREDIT]];
-  const daily={name:'Daily Sales',cols:[12,16,13,13,15,13,13,15,15,13,15,13,24,7,36],rows:[[B(shopName()+' — Daily sales, '+mn)],[],
-    [H('Date'),H('Staff'),H('Total Sales'),H('Less: Unpaid'),H('Add: Claimed (Cash)'),H('Less: Online'),H('Less: Expenses'),H('Cash on Hand'),H('Taken later for expenses'),H('Collected'),H('Remaining cash'),H('Total Online'),H('Report status'),H('Edits'),H('Last change reason')],
-    ...M.days.map(c=>[c.date,c.staff,c.saved?MON(c.sales):'',MON(c.unpaid),MON(c.claimed),MON(c.online),MON(c.exp),c.saved?MON(c.coh):'',
-      c.saved?MON(c.taken):'',c.saved?MON(c.collected):'',c.saved?MON(c.left):'',MON(c.onlineRecv),c.saved?dayStatus(c):'No report (not in totals)',c.saved?editCount(reportFor(c.date)):'',
+  const daily={name:'Daily Sales',cols:[12,16,13,13,13,15,13,13,15,15,40,13,15,13,24,7,36],rows:[[B(shopName()+' — Daily sales, '+mn)],[],
+    [H('Date'),H('Staff'),H('Total Sales'),H('Less: Redeemed points'),H('Less: Unpaid'),H('Add: Claimed (Cash)'),H('Less: Online'),H('Less: Expenses'),H('Cash on Hand'),H('Taken later for expenses'),H('Taken for (details)'),H('Collected'),H('Remaining cash'),H('Total Online'),H('Report status'),H('Edits'),H('Last change reason')],
+    ...M.days.map(c=>[c.date,c.staff,c.saved?MON(c.sales):'',c.saved?MON(c.points||0):'',MON(c.unpaid),MON(c.claimed),MON(c.online),MON(c.exp),c.saved?MON(c.coh):'',
+      c.saved?MON(c.taken):'',c.saved?takenDetail(c.date).map(x=>x.desc+' '+peso(x.amount)+' (paid '+x.paid+')').join('; '):'',c.saved?MON(c.collected):'',c.saved?MON(c.left):'',MON(c.onlineRecv),c.saved?dayStatus(c):'No report (not in totals)',c.saved?editCount(reportFor(c.date)):'',
       c.saved?((historyOf(reportFor(c.date)).filter(h=>h.type==='edited').slice(-1)[0]||{}).reason||''):'']),
-    [B('TOTAL'),'',MONB(t.sales),MONB(t.unpaid),MONB(t.claimed),MONB(t.online),MONB(t.exp),MONB(t.coh),MONB(t.taken),MONB(t.collected),MONB(t.left),MONB(t.onlineRecv)]]};
+    [B('TOTAL'),'',MONB(t.sales),MONB(t.points),MONB(t.unpaid),MONB(t.claimed),MONB(t.online),MONB(t.exp),MONB(t.coh),MONB(t.taken),'',MONB(t.collected),MONB(t.left),MONB(t.onlineRecv)]]};
   const unp={name:'Unpaid',cols:[24,12,13,12,12,13,14,10],rows:[[B('Unpaid recorded — '+mn)],[],
     [H('Name'),H('Claim stub #'),H('Amount'),H('Paid'),H('Balance'),H('Unpaid date'),H('Date fully paid'),H('Status')],
     ...M.unpaidM.map(u=>[u.name,u.stub||'',MON(u.amount),MON(paidOf(u)),MON(balOf(u)),u.date,u.claimed?u.dateClaimed:'',u.claimed?'Claimed':(isPartial(u)?'Partial':'Unpaid')]),
@@ -1491,7 +1664,7 @@ function exportMonth(){
 /* ================= Init ================= */
 function renderAll(){
   $('hdrTitle').textContent=DB.settings.shop||'Laundry Cash';
-  renderDash();renderUnpaid();renderClaimed();renderOnline();renderExp();renderMore();renderSum();renderColl();
+  renderDash();renderUnpaid();renderClaimed();renderOnline();renderExp();renderMore();renderSum();renderColl();renderCust();
   if($('p-report').classList.contains('on'))renderReport();
 }
 load();

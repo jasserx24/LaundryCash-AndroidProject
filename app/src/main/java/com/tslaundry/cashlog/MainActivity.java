@@ -81,7 +81,8 @@ public class MainActivity extends Activity {
     public void onBackPressed() {
         // Close an open edit sheet first, then go back to Dashboard, otherwise exit.
         web.evaluateJavascript(
-            "(function(){var m=document.getElementById('modal');" +
+            "(function(){var q=document.getElementById('qrView');if(q&&q.classList.contains('on')){closeQR();return 1;}" +
+            "var m=document.getElementById('modal');" +
             "if(m&&m.classList.contains('on')){closeModal();return 1;}" +
             "if(!document.getElementById('p-dash').classList.contains('on')){go('dash');return 1;}return 0;})()",
             value -> { if (!"1".equals(value)) exitApp(); });
