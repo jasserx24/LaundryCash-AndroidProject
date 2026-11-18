@@ -120,6 +120,12 @@
       </div>
       <button class="btn ghost" onclick="go('unpaid')">View list</button>
     </div>
+    <div class="card">
+      <h2>Uncollected cash</h2>
+      <div style="font-size:24px;font-weight:800;color:var(--ok)" id="dUncol">₱0.00</div>
+      <div class="note" id="dUncolSub"></div>
+      <button class="btn ghost" onclick="go('coll')">💰 Collect cash</button>
+    </div>
     <div class="card"><h2>Recent reports</h2><div id="dHist"></div></div>
   </section>
 
@@ -153,9 +159,10 @@
       <datalist id="custList"></datalist>
       <div class="hint" id="uHint"></div>
       <div class="row">
+        <div><label>Claim stub #</label><input id="uStub" placeholder="e.g. 1234" autocomplete="off"></div>
         <div><label>Amount (₱)</label><input id="uAmt" type="number" inputmode="decimal" step="0.01" placeholder="0.00"></div>
-        <div><label>Date</label><input id="uDate" type="date"></div>
       </div>
+      <label>Date</label><input id="uDate" type="date">
       <button class="btn" onclick="addUnpaid(false)">+ Add to Unpaid</button>
     </div>
     <div class="card">
@@ -165,7 +172,7 @@
     </div>
     <div class="card">
       <h2>Unpaid list <span class="pill" id="uCount">0</span></h2>
-      <input id="uSearch" placeholder="Search name…" oninput="renderUnpaid()" style="margin-bottom:6px">
+      <input id="uSearch" placeholder="Search name or claim stub #…" oninput="renderUnpaid()" style="margin-bottom:6px">
       <div id="uList"></div>
       <div class="tot"><span>Total unpaid</span><span id="uTot">₱0.00</span></div>
     </div>
@@ -174,12 +181,13 @@
   <!-- CLAIMED -->
   <section class="page" id="p-claimed">
     <div class="card">
-      <h2>Claimed (paid)</h2>
+      <h2>Claimed &amp; partial payments</h2>
+      <div class="note" style="margin-top:-6px">Every payment received is listed here — full or partial. Tap Edit on a payment to change it. Dates filter by payment date.</div>
       <div class="row">
         <div><label>From</label><input type="date" id="cFrom" onchange="renderClaimed()"></div>
         <div><label>To</label><input type="date" id="cTo" onchange="renderClaimed()"></div>
       </div>
-      <input id="cSearch" placeholder="Search name…" oninput="renderClaimed()" style="margin-top:8px">
+      <input id="cSearch" placeholder="Search name or claim stub #…" oninput="renderClaimed()" style="margin-top:8px">
     </div>
     <div class="card">
       <h2>Claimed summary</h2>
@@ -188,7 +196,7 @@
     </div>
     <div class="card">
       <div id="cList"></div>
-      <div class="tot"><span>Total claimed</span><span id="cTot">₱0.00</span></div>
+      <div class="tot"><span>Total received</span><span id="cTot">₱0.00</span></div>
     </div>
   </section>
 
@@ -238,6 +246,36 @@
     </div>
   </section>
 
+  <!-- COLLECTION -->
+  <section class="page" id="p-coll">
+    <div class="card">
+      <h2>Cash collection</h2>
+      <div class="note" style="margin-top:-6px">Choose the dates to collect. Each day's cash on hand (minus cash already taken for expenses or already collected) is totaled automatically.</div>
+      <div class="row">
+        <div><label>From</label><input type="date" id="kFrom" onchange="renderColl()"></div>
+        <div><label>To</label><input type="date" id="kTo" onchange="renderColl()"></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="sm b-ed" onclick="collRange('all')">All uncollected</button>
+        <button class="sm b-ed" onclick="collRange('month')">This month</button>
+        <button class="sm b-ed" onclick="collRange('week')">Last 7 days</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Cash on hand per day</h2>
+      <div style="overflow-x:auto"><table class="tbl" id="kTbl"></table></div>
+      <div id="kWarn"></div>
+      <div class="tot" style="font-size:18px;margin-top:10px"><span>TOTAL TO COLLECT</span><span id="kTot" style="color:var(--ok)">₱0.00</span></div>
+      <div class="row">
+        <div><label>Collected by</label><input id="kName" placeholder="Name"></div>
+        <div><label>Date collected</label><input type="date" id="kDate"></div>
+      </div>
+      <label>Note (optional)</label><input id="kNote" placeholder="e.g. Deposited to BPI">
+      <button class="btn ok" onclick="saveColl()">✔ Save collection</button>
+    </div>
+    <div class="card"><h2>Collection history</h2><div id="kHist"></div></div>
+  </section>
+
   <!-- MONTHLY SUMMARY -->
   <section class="page" id="p-sum">
     <div class="card">
@@ -250,7 +288,7 @@
     <div class="card">
       <h2>Daily sales</h2>
       <div style="overflow-x:auto"><table class="tbl" id="sTbl"></table></div>
-      <div class="note">🔒 locked report • * no report saved (not included in totals) • ⚠ records changed after saving. Claim = cash claims only. Left = cash on hand minus what was taken later for expenses. Swipe left to see all columns. Tap a date to open its report.</div>
+      <div class="note">🔒 locked report • * no report saved (not included in totals) • ⚠ records changed after saving. Claim = cash claims only. Coll. = collected. Left = cash on hand minus what was taken later for expenses and what was collected. Swipe left to see all columns. Tap a date to open its report.</div>
     </div>
     <div class="card"><h2>Expenses this month</h2><div id="sExp"></div></div>
     <div class="card"><h2>Unpaid and claimed this month</h2><div id="sUC"></div></div>
@@ -286,6 +324,7 @@
   <button data-p="claimed" onclick="go('claimed')"><span class="ic">✅</span>Claimed</button>
   <button data-p="online" onclick="go('online')"><span class="ic">📱</span>Online</button>
   <button data-p="exp" onclick="go('exp')"><span class="ic">💸</span>Expenses</button>
+  <button data-p="coll" onclick="go('coll')"><span class="ic">💰</span>Collect</button>
   <button data-p="sum" onclick="go('sum')"><span class="ic">📊</span>Summary</button>
 </nav>
 
@@ -294,10 +333,10 @@
 
 <script>
 /* ================= Basics ================= */
-const APP_VERSION='2.4';
+const APP_VERSION='2.7';
 const KEY='laundry_cash_v1';
 const ONLINE_METHODS=['GCash','Maya','Bank Transfer','Other online'];
-let DB={unpaid:[],expenses:[],online:[],reports:[],settings:{shop:'',pin:''}};
+let DB={unpaid:[],expenses:[],online:[],reports:[],collections:[],settings:{shop:'',pin:''}};
 
 const $=id=>document.getElementById(id);
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
@@ -329,11 +368,13 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){toast
 function fixMethod(m){return (m==='Iba pa (online)')?'Other online':m;}
 function normalize(){
   let changed=false;
-  DB.unpaid=DB.unpaid||[];DB.expenses=DB.expenses||[];DB.online=DB.online||[];DB.reports=DB.reports||[];
+  DB.unpaid=DB.unpaid||[];DB.expenses=DB.expenses||[];DB.online=DB.online||[];DB.reports=DB.reports||[];DB.collections=DB.collections||[];
   DB.settings=Object.assign({shop:'',pin:''},DB.settings||{});
   DB.unpaid.forEach(u=>{
     if(u.claimed&&!Array.isArray(u.payments)){u.payments=[{method:fixMethod(u.method||'Cash'),amount:num(u.amount),ref:u.ref||''}];changed=true;}
-    if(!u.claimed&&u.payments&&u.payments.length){u.payments=[];changed=true;}
+    if(!Array.isArray(u.payments))u.payments=[];
+    // every payment has its own date (staggered payments)
+    u.payments.forEach(p=>{if(!p.date){p.date=u.dateClaimed||u.date;changed=true;}if(!p.id){p.id=uid();changed=true;}});
     if('method' in u||'ref' in u){delete u.method;delete u.ref;changed=true;}
   });
   DB.online.forEach(o=>{const m=fixMethod(o.method);if(m!==o.method){o.method=m;changed=true;}});
@@ -343,7 +384,16 @@ function normalize(){
 }
 
 /* ================= Payments ================= */
-const pays=u=>u.claimed?(u.payments||[]):[];
+const pays=u=>u.payments||[];
+const paidOf=u=>r2(sum(pays(u),p=>p.amount));
+const balOf=u=>r2(num(u.amount)-paidOf(u));
+const isPartial=u=>!u.claimed&&paidOf(u)>0;
+const sdate=d=>fdate(d).replace(/, \d{4}$/,'');
+// recompute claimed status after payments change
+function settle(u){const ps=pays(u).slice().sort((a,b)=>a.date.localeCompare(b.date));
+  if(ps.length&&balOf(u)<=0.004){u.claimed=true;u.dateClaimed=ps[ps.length-1].date;}else{u.claimed=false;u.dateClaimed='';}}
+function payHist(u){return pays(u).slice().sort((a,b)=>a.date.localeCompare(b.date)).map(p=>`<span class="pill ${p.method==='Cash'?'ok':'on'}">${sdate(p.date)} ${esc(p.method)} ${peso(p.amount)}</span>`).join(' ');}
+function payHistText(u){return pays(u).slice().sort((a,b)=>a.date.localeCompare(b.date)).map(p=>p.date+' '+p.method+' '+peso(p.amount)+(p.ref?' Ref '+p.ref:'')).join('; ');}
 const cashPart=u=>r2(sum(pays(u).filter(p=>p.method==='Cash'),p=>p.amount));
 const onlinePart=u=>r2(sum(pays(u).filter(p=>p.method!=='Cash'),p=>p.amount));
 function payParts(ps){return (ps||[]).filter(p=>num(p.amount)>0);}
@@ -359,23 +409,31 @@ const selfPart=e=>r2(sum(srcs(e).filter(x=>x.date===e.date),x=>x.amount));
 const oldParts=e=>srcs(e).filter(x=>x.date!==e.date&&num(x.amount)>0);
 const oldSum=e=>r2(sum(oldParts(e),x=>x.amount));
 function takenFrom(d,excl){return r2(DB.expenses.filter(e=>e.id!==excl&&e.date!==d).reduce((s,e)=>s+sum(srcs(e).filter(x=>x.date===d),x=>x.amount),0));}
+function collectedFrom(d,excl){return r2((DB.collections||[]).filter(c=>c.id!==excl).reduce((s,c)=>s+sum(c.items.filter(i=>i.date===d),i=>i.amount),0));}
+// Cash of a saved day that is still in hand: cash on hand − taken for later expenses − collected
+function cashLeft(d){const r=reportFor(d);return r&&r.snap?r2(r.snap.coh-takenFrom(d)-collectedFrom(d)):0;}
 function srcText(e){const o=oldParts(e);if(!o.length)return '';
   return 'From '+o.map(x=>fdate(x.date).replace(/, \d{4}$/,'')+' '+peso(x.amount)).join(' + ')+(selfPart(e)>0?' + this date '+peso(selfPart(e)):'');}
 
 /* ================= Core computation =================
    Cash on Hand = Total Sales − Unpaid + Claimed (cash) − Online payments − Expenses */
 function compute(date,sales){
-  const U=DB.unpaid.filter(u=>u.date===date), C=DB.unpaid.filter(u=>u.claimed&&u.dateClaimed===date);
+  const U=DB.unpaid.filter(u=>u.date===date);
+  // payments received on this date (full or partial)
+  const C=DB.unpaid.filter(u=>pays(u).some(p=>p.date===date)).map(u=>{const ps=pays(u).filter(p=>p.date===date);
+    const after=r2(num(u.amount)-sum(pays(u).filter(p=>p.date<=date),p=>p.amount));
+    return {u,ps,cash:r2(sum(ps.filter(p=>p.method==='Cash'),p=>p.amount)),on:r2(sum(ps.filter(p=>p.method!=='Cash'),p=>p.amount)),after};});
   const E=DB.expenses.filter(e=>e.date===date), O=DB.online.filter(o=>o.date===date);
-  const unpaid=r2(sum(U,u=>u.amount)), claimed=r2(sum(C,cashPart)), claimedOn=r2(sum(C,onlinePart));
+  const unpaid=r2(sum(U,u=>u.amount)), claimed=r2(sum(C,x=>x.cash)), claimedOn=r2(sum(C,x=>x.on));
   const exp=r2(sum(E,selfPart)), expOld=r2(sum(E,oldSum)), online=r2(sum(O,o=>o.amount));
   const byMethod={}, addM=(m,a)=>{if(num(a)>0)byMethod[m]=r2((byMethod[m]||0)+num(a));};
-  O.forEach(o=>addM(o.method,o.amount)); C.forEach(u=>pays(u).forEach(p=>{if(p.method!=='Cash')addM(p.method,p.amount);}));
+  O.forEach(o=>addM(o.method,o.amount)); C.forEach(x=>x.ps.forEach(p=>{if(p.method!=='Cash')addM(p.method,p.amount);}));
   sales=num(sales);
   return {date,sales,unpaid,claimed,claimedOn,online,onlineRecv:r2(online+claimedOn),byMethod,exp,expOld,
     coh:r2(sales-unpaid+claimed-online-exp),
-    unpaidItems:U.map(u=>({id:u.id,name:u.name,amount:num(u.amount),claimed:!!u.claimed,dateClaimed:u.dateClaimed||''})),
-    claimedItems:C.map(u=>({id:u.id,name:u.name,amount:num(u.amount),date:u.date,payments:pays(u).map(p=>Object.assign({},p))})),
+    unpaidItems:U.map(u=>({id:u.id,name:u.name,stub:u.stub||'',amount:num(u.amount),claimed:!!u.claimed,dateClaimed:u.dateClaimed||''})),
+    claimedItems:C.map(({u,ps,after})=>({id:u.id,name:u.name,stub:u.stub||'',amount:r2(sum(ps,p=>p.amount)),total:num(u.amount),balance:Math.max(0,after),date:u.date,
+      payments:ps.map(p=>({method:p.method,amount:num(p.amount),ref:p.ref||''}))})),
     onlineItems:O.map(o=>({id:o.id,name:o.name||'',amount:num(o.amount),method:o.method,ref:o.ref||''})),
     expItems:E.filter(e=>selfPart(e)>0).map(e=>({id:e.id,desc:e.desc,amount:selfPart(e)})),
     expOldItems:E.filter(e=>oldParts(e).length).map(e=>({desc:e.desc,amount:oldSum(e),from:oldParts(e).map(x=>({date:x.date,amount:num(x.amount)}))}))};
@@ -411,8 +469,8 @@ function diffList(o,n,label,desc){
 }
 function changeReasons(r){
   const L=compute(r.date,r.sales),S=r.snap||{};
-  return [...diffList(S.unpaidItems,L.unpaidItems,'Unpaid',x=>x.name+' '+peso(x.amount)),
-    ...diffList(S.claimedItems,L.claimedItems,'Claimed',x=>x.name+' '+peso(x.amount)+' ('+payText(x.payments)+')'),
+  return [...diffList(S.unpaidItems,L.unpaidItems,'Unpaid',x=>x.name+stubTxt(x)+' '+peso(x.amount)),
+    ...diffList(S.claimedItems,L.claimedItems,'Claimed',x=>x.name+stubTxt(x)+' '+peso(x.amount)+' ('+payText(x.payments)+')'+(x.balance>0?' partial':'')),
     ...diffList(S.onlineItems,L.onlineItems,'Online payment',x=>x.method+' '+peso(x.amount)+(x.name?' – '+x.name:'')),
     ...diffList(S.expItems,L.expItems,'Expense',x=>x.desc+' '+peso(x.amount))];
 }
@@ -480,6 +538,9 @@ function renderDash(){
   const bm=Object.entries(v.byMethod||{});
   $('dOnlB').innerHTML=bm.length?bm.map(([m,a])=>esc(m)+': <b style="color:var(--ink)">'+peso(a)+'</b>').join('<br>'):'None yet';
   const o=outstanding(); $('dUnpN').textContent=o.n; $('dUnpA').textContent=peso(o.amt);
+  const ud=uncollectedDays(); $('dUncol').textContent=peso(sum(ud,cashLeft));
+  const lastC=[...(DB.collections||[])].sort((a,b)=>(b.date+b.at).localeCompare(a.date+a.at))[0];
+  $('dUncolSub').textContent=(ud.length?ud.length+' day(s) not yet collected'+(ud.length?' (since '+fdate(ud[0])+')':''):'All saved days are collected')+(lastC?' • Last collection '+fdate(lastC.date)+' by '+lastC.name:'');
   const reps=[...DB.reports].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
   $('dHist').innerHTML=reps.length?reps.map(histRow).join(''):'<div class="empty">No reports yet.</div>';
 }
@@ -582,8 +643,8 @@ function renderReport(){
       <button class="btn ghost" onclick="shareReport()">Share / copy report</button>`;
   const sec=(title,items,f)=>`<div style="font-weight:700;margin-top:8px">${title}</div>`+(items.length?items.map(f).join(''):'<div class="note">None</div>');
   $('rDetail').innerHTML=(mode!=='new'?'<div class="note" style="margin-top:0">As saved in the report.</div>':'')+
-    sec('Unpaid ('+c.unpaidItems.length+')',c.unpaidItems,u=>`<div class="item"><div class="info"><div class="nm">${esc(u.name)}</div><div class="meta">${u.claimed?'<span class="pill ok">claimed '+fdate(u.dateClaimed)+'</span>':'<span class="pill">unpaid</span>'}</div></div><div class="amt">${peso(u.amount)}</div></div>`)+
-    sec('Claimed ('+c.claimedItems.length+')',c.claimedItems,u=>`<div class="item"><div class="info"><div class="nm">${esc(u.name)}</div><div class="meta">${payPills(u.payments)} unpaid since ${fdate(u.date)}</div></div><div class="amt">${peso(u.amount)}</div></div>`)+
+    sec('Unpaid ('+c.unpaidItems.length+')',c.unpaidItems,u=>`<div class="item"><div class="info"><div class="nm">${esc(u.name)}${stubPill(u)}</div><div class="meta">${u.claimed?'<span class="pill ok">claimed '+fdate(u.dateClaimed)+'</span>':'<span class="pill">unpaid</span>'}</div></div><div class="amt">${peso(u.amount)}</div></div>`)+
+    sec('Claimed / payments received ('+c.claimedItems.length+')',c.claimedItems,u=>`<div class="item"><div class="info"><div class="nm">${esc(u.name)}${stubPill(u)}</div><div class="meta">${u.balance>0?'<span class="pill">partial — balance '+peso(u.balance)+'</span> ':''}${payPills(u.payments)} unpaid since ${fdate(u.date)}</div></div><div class="amt">${peso(u.amount)}</div></div>`)+
     sec('Online payments ('+c.onlineItems.length+')',c.onlineItems,o=>`<div class="item"><div class="info"><div class="nm">${esc(o.name||'(no name)')}</div><div class="meta"><span class="pill on">${esc(o.method)}</span>${o.ref?' Ref: '+esc(o.ref):''}</div></div><div class="amt">${peso(o.amount)}</div></div>`)+
     sec('Expenses ('+c.expItems.length+')',c.expItems,e=>`<div class="item"><div class="info"><div class="nm">${esc(e.desc)}</div></div><div class="amt">${peso(e.amount)}</div></div>`)+
     ((c.expOldItems||[]).length?sec("Paid from previous days' sales ("+c.expOldItems.length+')',c.expOldItems,x=>`<div class="item"><div class="info"><div class="nm">${esc(x.desc)}</div><div class="meta">${x.from.map(f=>fdate(f.date)+' '+peso(f.amount)).join(' + ')}</div></div><div class="amt">${peso(x.amount)}</div></div>`):'');
@@ -599,6 +660,15 @@ function saveReport(){
      <div class="note">To fix: check that Total Sales is correct, or edit the big expense (e.g. salary) and choose <b>"Split from previous days' sales"</b>.</div>
      <button class="btn" onclick="closeModal();goExp('${d}')">Go to Expenses for ${fdate(d)}</button>
      <button class="btn ghost" onclick="closeModal()">OK</button>`);
+    return;
+  }
+  const used=r2(takenFrom(d)+collectedFrom(d));
+  if(used>0&&chk.coh<used-0.004){
+    openSheet(`<h3>⚠ Cash on hand too low</h3><div class="note">${peso(used)} of this day's cash was already taken for expenses or collected
+      (${takenFrom(d)?'expenses '+peso(takenFrom(d)):''}${takenFrom(d)&&collectedFrom(d)?', ':''}${collectedFrom(d)?'collected '+peso(collectedFrom(d)):''}).
+      The new cash on hand ${peso(chk.coh)} would be less than that, so remaining cash would go negative.</div>
+      <div class="note">Check Total Sales, or change the expense/collection that used this day's cash first.</div>
+      <button class="btn ghost" onclick="closeModal()">OK</button>`);
     return;
   }
   const staff=$('rStaff').value.trim();
@@ -648,8 +718,8 @@ function cancelEdit(){const r=reportFor($('rDate').value||today());if(!r)return;
 function shareReport(){
   const {c,staff,d}=currentReport();
   let txt=reportText(c,staff);
-  if(c.unpaidItems.length)txt+='\n\nUnpaid:\n'+c.unpaidItems.map(u=>'- '+u.name+' '+peso(u.amount)).join('\n');
-  if(c.claimedItems.length)txt+='\n\nClaimed:\n'+c.claimedItems.map(u=>'- '+u.name+' '+peso(u.amount)+' ['+payText(u.payments)+'] (since '+fdate(u.date)+')').join('\n');
+  if(c.unpaidItems.length)txt+='\n\nUnpaid:\n'+c.unpaidItems.map(u=>'- '+u.name+stubTxt(u)+' '+peso(u.amount)).join('\n');
+  if(c.claimedItems.length)txt+='\n\nClaimed:\n'+c.claimedItems.map(u=>'- '+u.name+stubTxt(u)+' '+peso(u.amount)+' ['+payText(u.payments)+']'+(u.balance>0?' PARTIAL, balance '+peso(u.balance):'')+' (since '+fdate(u.date)+')').join('\n');
   if(c.onlineItems.length)txt+='\n\nOnline payments:\n'+c.onlineItems.map(o=>'- '+o.method+' '+peso(o.amount)+(o.name?' '+o.name:'')+(o.ref?' (Ref '+o.ref+')':'')).join('\n');
   if(c.expItems.length)txt+='\n\nExpenses:\n'+c.expItems.map(e=>'- '+e.desc+' '+peso(e.amount)).join('\n');
   shareText(txt,'Cash Report '+fdate(d));
@@ -661,6 +731,11 @@ function shareText(txt,title){
 }
 
 /* ================= Unpaid + duplicate check ================= */
+const stubPill=x=>x&&x.stub?` <span class="pill gr">#${esc(x.stub)}</span>`:'';
+const stubTxt=x=>x&&x.stub?' #'+x.stub:'';
+const normStub=v=>String(v||'').replace(/^#/,'').trim().toLowerCase();
+const nameStub=u=>(u.name+' #'+(u.stub||'')).toLowerCase();
+function stubTaken(stub,excl){const k=normStub(stub);return k?DB.unpaid.find(u=>!u.claimed&&u.id!==excl&&normStub(u.stub)===k):null;}
 const normName=s=>String(s||'').toLowerCase().replace(/[^a-z0-9ñ ]/g,' ').replace(/\s+/g,' ').trim();
 // same    = exactly the same name ("Juan Dela Cruz" = "juan  dela cruz")
 // similar = one name is the other without a surname ("Juan" vs "Juan Dela Cruz")
@@ -676,7 +751,7 @@ function findMatches(name,excludeId){
       if(s.length<l.length&&s.every((t,i)=>t===l[i]))kind='similar';}
     return kind?{u,kind}:null;}).filter(Boolean);
 }
-function balanceOf(name){const n=normName(name);const L=DB.unpaid.filter(u=>!u.claimed&&normName(u.name)===n);return {n:L.length,amt:r2(sum(L,u=>u.amount))};}
+function balanceOf(name){const n=normName(name);const L=DB.unpaid.filter(u=>!u.claimed&&normName(u.name)===n);return {n:L.length,amt:r2(sum(L,balOf))};}
 function nameHint(){
   const ms=findMatches($('uName').value), h=$('uHint');
   if(!ms.length){h.style.display='none';return;}
@@ -685,15 +760,25 @@ function nameHint(){
   h.style.display='block';
 }
 function addUnpaid(force){
-  const name=$('uName').value.trim(), amt=num($('uAmt').value), date=$('uDate').value||today();
+  const name=$('uName').value.trim(), amt=num($('uAmt').value), date=$('uDate').value||today(), stub=$('uStub').value.trim().replace(/^#/,'');
   if(!name){toast('Enter the customer name');return;} if(amt<=0){toast('Enter the amount');return;}
-  const ms=findMatches(name);
+  const ms=findMatches(name), dup=stubTaken(stub);
+  if(dup&&!force){
+    openSheet(`<h3>⚠ Claim stub #${esc(stub)} is already used</h3>
+     <div class="note">This stub # belongs to an unpaid that is not yet claimed:</div>
+     <div class="item"><div class="info"><div class="nm">${esc(dup.name)}${stubPill(dup)}</div><div class="meta">Unpaid since ${fdate(dup.date)}</div></div><div class="amt">${peso(dup.amount)}</div></div>
+     <div class="note">Check the stub. Two unpaid items should not have the same claim stub #.</div>
+     <button class="btn" onclick="closeModal();$('uStub').focus();$('uStub').select()">Change the claim stub #</button>
+     <button class="btn ghost" onclick="closeModal();addUnpaid(true)">Add anyway</button>
+     <button class="btn ghost" onclick="closeModal()">Cancel (don't add)</button>`);
+    return;
+  }
   if(ms.length&&!force){
-    const bal=r2(sum(ms,x=>x.u.amount));
+    const bal=r2(sum(ms,x=>balOf(x.u)));
     openSheet(`<h3>⚠ This customer may still owe</h3>
      <div class="note">Check if this is the same person to avoid recording the same unpaid twice.</div>
      <div style="margin-top:8px">${ms.map(({u,kind})=>`<div class="item"><div class="info"><div class="nm">${esc(u.name)} ${kind==='same'?'':'<span class="pill gr">similar name</span>'}</div>
-       <div class="meta">Unpaid since ${fdate(u.date)} • ${daysAgo(u.date)} day(s) ago</div></div><div class="amt">${peso(u.amount)}</div></div>`).join('')}</div>
+       <div class="meta">${u.stub?'Stub #'+esc(u.stub)+' • ':''}Unpaid since ${fdate(u.date)} • ${daysAgo(u.date)} day(s) ago${isPartial(u)?' • paid '+peso(paidOf(u))+' of '+peso(u.amount):''}</div></div><div class="amt">${peso(balOf(u))}</div></div>`).join('')}</div>
      <div class="sumbox" style="margin-top:8px">${kv('Existing balance',peso(bal),'color:var(--bad)')}${kv('New unpaid ('+esc(name)+')',peso(amt))}${kv('<b>Total if same customer</b>',peso(bal+amt))}</div>
      ${ms.some(x=>x.u.date===date&&num(x.u.amount)===amt)?'<div class="warn">Same amount on the same date was already recorded — this may be a double entry.</div>':''}
      <button class="btn warnb" onclick="closeModal();addUnpaid(true)">Same customer — add this new unpaid</button>
@@ -706,8 +791,8 @@ function addUnpaid(force){
     return;
   }
   guardLocked([date],()=>{
-    DB.unpaid.push({id:uid(),name,amount:amt,date,claimed:false,dateClaimed:'',payments:[]});
-    $('uName').value='';$('uAmt').value='';$('uHint').style.display='none';
+    DB.unpaid.push({id:uid(),name,stub,amount:amt,date,claimed:false,dateClaimed:'',payments:[]});
+    $('uName').value='';$('uAmt').value='';$('uStub').value='';$('uHint').style.display='none';
     done('Added to Unpaid');});
 }
 function diffCustomer(){closeModal();const i=$('uName');i.focus();const v=i.value;i.setSelectionRange(v.length,v.length);
@@ -715,18 +800,19 @@ function diffCustomer(){closeModal();const i=$('uName');i.focus();const v=i.valu
 function renderUnpaid(){
   const q=$('uSearch').value.trim().toLowerCase();
   const open=DB.unpaid.filter(u=>!u.claimed).sort((a,b)=>a.date.localeCompare(b.date));
-  const list=open.filter(u=>!q||u.name.toLowerCase().includes(q));
+  const list=open.filter(u=>!q||nameStub(u).includes(q));
   $('uCount').textContent=open.length;
   $('uList').innerHTML=list.length?list.map(u=>{
     const d=daysAgo(u.date), bal=balanceOf(u.name);
-    return `<div class="item" style="flex-wrap:wrap"><div class="info"><div class="nm">${esc(u.name)}</div>
-      <div class="meta">${fdate(u.date)} • ${d<=0?'today':d+' day(s) ago'}${bal.n>1?` • <b style="color:var(--bad)">Total balance ${peso(bal.amt)} (${bal.n})</b>`:''}</div></div>
-      <div class="amt">${peso(u.amount)}</div>
+    return `<div class="item" style="flex-wrap:wrap"><div class="info"><div class="nm">${esc(u.name)}${stubPill(u)}</div>
+      <div class="meta">${fdate(u.date)} • ${d<=0?'today':d+' day(s) ago'}${bal.n>1?` • <b style="color:var(--bad)">Total balance ${peso(bal.amt)} (${bal.n})</b>`:''}</div>
+      ${isPartial(u)?`<div class="meta"><span class="pill">PARTIAL</span> Paid <b>${peso(paidOf(u))}</b> of ${peso(u.amount)} • Balance <b style="color:var(--bad)">${peso(balOf(u))}</b></div><div class="meta">${payHist(u)}</div>`:''}</div>
+      <div class="amt">${peso(balOf(u))}</div>
       <div class="acts" style="width:100%"><button class="sm b-ed" onclick="editItem('${u.id}')">Edit</button>
       <button class="sm b-del" onclick="delUnpaid('${u.id}')">Delete</button>
-      <button class="sm b-ok" onclick="claim('${u.id}')">✔ Claimed</button></div></div>`;}).join('')
+      <button class="sm b-ok" onclick="claim('${u.id}')">💵 Receive payment</button></div></div>`;}).join('')
     :'<div class="empty">'+(open.length?'No match.':'No unpaid. 🎉')+'</div>';
-  $('uTot').textContent=peso(sum(list,u=>u.amount));
+  $('uTot').textContent=peso(sum(list,balOf));
   const b=$('navBadge'); b.style.display=open.length?'inline':'none'; b.textContent=open.length;
   const names=[...new Set(DB.unpaid.map(u=>u.name.trim()))].sort();
   $('custList').innerHTML=names.map(n=>`<option value="${esc(n)}">`).join('');
@@ -735,11 +821,11 @@ function renderUnpaid(){
 function delUnpaid(id){const u=DB.unpaid.find(x=>x.id===id);
   openSheet(`<h3>Delete unpaid?</h3><div class="note">${esc(u.name)} • ${peso(u.amount)} • ${fdate(u.date)}</div>
    <button class="btn red" onclick="doDelUnpaid('${id}')">Delete</button><button class="btn ghost" onclick="closeModal()">Cancel</button>`);}
-function doDelUnpaid(id){const u=DB.unpaid.find(x=>x.id===id);guardLocked([u.date,u.dateClaimed],()=>{DB.unpaid=DB.unpaid.filter(x=>x.id!==id);done('Deleted');});}
+function doDelUnpaid(id){const u=DB.unpaid.find(x=>x.id===id);guardLocked([u.date,...pays(u).map(p=>p.date)],()=>{DB.unpaid=DB.unpaid.filter(x=>x.id!==id);done('Deleted');});}
 
 /* ================= Claim with split payment ================= */
 let _payTotal=0;
-const payTotal=()=>$('mA')?num($('mA').value):_payTotal;
+const payTotal=()=>$('mPay')?num($('mPay').value):_payTotal;
 function payFields(total,ps){
   ps=ps||[];const has=ps.length>0;
   const cash=has?r2(sum(ps.filter(p=>p.method==='Cash'),p=>p.amount)):total;
@@ -768,67 +854,137 @@ function readPays(){
   return ps;
 }
 function claim(id){
-  const u=DB.unpaid.find(x=>x.id===id); if(!u)return; _payTotal=num(u.amount);
-  openSheet(`<h3>Claim: ${esc(u.name)}</h3><div class="note">${peso(u.amount)} • unpaid since ${fdate(u.date)}</div>
-   <label>Date claimed</label><input type="date" id="mDC" value="${today()}">
-   ${payFields(num(u.amount),null)}
-   <button class="btn ok" onclick="doClaim('${id}')">✔ Paid (Claimed)</button>
+  const u=DB.unpaid.find(x=>x.id===id); if(!u)return; const bal=balOf(u); _payTotal=bal;
+  openSheet(`<h3>💵 Payment: ${esc(u.name)}${stubPill(u)}</h3>
+   <div class="sumbox" style="margin-top:6px">${kv('Total unpaid',peso(u.amount))}${paidOf(u)?kv('Already paid',peso(paidOf(u)),'color:var(--ok)'):''}
+     ${kv('<b>Balance</b>',peso(bal),'color:var(--bad)')}<div class="note">Unpaid since ${fdate(u.date)}</div>
+     ${paidOf(u)?'<div class="note">'+payHist(u)+'</div>':''}</div>
+   <div class="row"><div><label>Date paid</label><input type="date" id="mDC" value="${today()}"></div>
+   <div><label>Amount paid now (₱)</label><input id="mPay" type="number" inputmode="decimal" step="0.01" value="${bal}" oninput="payNow()"></div></div>
+   <div class="row" style="margin-top:6px"><button type="button" class="sm b-ed" onclick="$('mPay').value=${bal};payNow()">Full balance ${peso(bal)}</button></div>
+   <div class="note" id="mPayNote"></div>
+   ${payFields(bal,null)}
+   <button class="btn ok" onclick="doClaim('${id}')">✔ Save payment</button>
    <button class="btn ghost" onclick="closeModal()">Cancel</button>`);
+  payNow();
+}
+function payNow(){
+  const t=payTotal(); $('pCash').value=r2(Math.max(0,t-num($('pOn').value))); if(num($('pOn').value)>t)$('pOn').value=t;
+  const bal=_payTotal, left=r2(bal-t);
+  $('mPayNote').innerHTML=t<=0?'<b style="color:var(--bad)">Enter the amount paid now</b>':t>bal+0.004?`<b style="color:var(--bad)">More than the balance (${peso(bal)})</b>`
+    :left>0?`<span class="pill">PARTIAL</span> Remaining balance after this payment: <b style="color:var(--bad)">${peso(left)}</b> — stays in Unpaid`
+    :'<span class="pill ok">FULL</span> Fully paid — moves to Claimed';
   payCheck();
 }
-function doClaim(id){const u=DB.unpaid.find(x=>x.id===id);const ps=readPays();if(!ps)return;const dc=$('mDC').value||today();guardLocked([dc],()=>{u.claimed=true;u.dateClaimed=dc;u.payments=ps;done('Claimed ✔ ('+payText(ps)+')');});}
+function doClaim(id){
+  const u=DB.unpaid.find(x=>x.id===id), t=payTotal(), bal=balOf(u);
+  if(t<=0){toast('Enter the amount paid now');return;} if(t>bal+0.004){toast('More than the balance '+peso(bal));return;}
+  const ps=readPays();if(!ps)return;const dc=$('mDC').value||today();
+  if(dc<u.date){toast('Payment date cannot be before the unpaid date');return;}
+  guardLocked([dc],()=>{ps.forEach(p=>{p.date=dc;p.id=uid();u.payments.push(p);});settle(u);
+    done(u.claimed?'Fully paid ✔ ('+payText(ps)+')':'Payment saved — balance '+peso(balOf(u)));});
+}
 
 /* ================= Claimed (editable) ================= */
+// payments inside the chosen date range
+function inRange(p){const f=$('cFrom').value,t=$('cTo').value;return (!f||p.date>=f)&&(!t||p.date<=t);}
+const rangePays=u=>pays(u).filter(inRange);
 function claimedList(){
-  const q=$('cSearch').value.trim().toLowerCase(), f=$('cFrom').value, t=$('cTo').value;
-  return DB.unpaid.filter(u=>u.claimed&&(!q||u.name.toLowerCase().includes(q))&&(!f||u.dateClaimed>=f)&&(!t||u.dateClaimed<=t));
+  const q=$('cSearch').value.trim().toLowerCase();
+  return DB.unpaid.filter(u=>rangePays(u).length&&(!q||nameStub(u).includes(q)));
 }
+const lastPay=u=>pays(u).reduce((m,p)=>p.date>m?p.date:m,'');
 function renderClaimed(){
-  const list=claimedList().sort((a,b)=>b.dateClaimed.localeCompare(a.dateClaimed));
-  $('cList').innerHTML=list.length?list.map(u=>`<div class="item" style="flex-wrap:wrap"><div class="info"><div class="nm">${esc(u.name)}</div>
-     <div class="meta">${payPills(u.payments)} Unpaid: ${fdate(u.date)} • Claimed: <b>${fdate(u.dateClaimed)}</b>${payParts(u.payments).some(p=>p.ref)?' • Ref '+payParts(u.payments).filter(p=>p.ref).map(p=>esc(p.ref)).join(', '):''}</div></div>
-     <div class="amt" style="color:var(--ok)">${peso(u.amount)}</div>
-     <div class="acts" style="width:100%"><button class="sm b-ed" onclick="editItem('${u.id}')">Edit</button>
-     <button class="sm b-del" onclick="unclaim('${u.id}')">Move back to Unpaid</button></div></div>`).join('')
-    :'<div class="empty">No claimed items for the selected dates.</div>';
-  $('cTot').textContent=peso(sum(list,u=>u.amount));
+  const list=claimedList().sort((a,b)=>lastPay(b).localeCompare(lastPay(a)));
+  $('cList').innerHTML=list.length?list.map(u=>{
+    const ps=pays(u).slice().sort((a,b)=>a.date.localeCompare(b.date));
+    return `<div class="item" style="flex-wrap:wrap"><div class="info"><div class="nm">${esc(u.name)}${stubPill(u)}</div>
+     <div class="meta">${u.claimed?`<span class="pill ok">FULLY PAID ${sdate(u.dateClaimed)}</span>`:`<span class="pill">PARTIAL — balance ${peso(balOf(u))}</span>`}
+       Unpaid ${fdate(u.date)} • Total ${peso(u.amount)}</div></div>
+     <div class="amt" style="color:var(--ok)">${peso(paidOf(u))}</div>
+     <div style="width:100%">${ps.map(p=>`<div class="srow" style="${inRange(p)?'':'opacity:.55'}"><div class="sinfo"><b>${fdate(p.date)}</b>
+         <span class="pill ${p.method==='Cash'?'ok':'on'}">${esc(p.method)}</span> <b>${peso(p.amount)}</b>${p.ref?'<br>Ref '+esc(p.ref):''}</div>
+         <button class="sm b-ed" onclick="editPay('${u.id}','${p.id}')">Edit</button>
+         <button class="sm b-del" onclick="removePay('${u.id}','${p.id}')">Remove</button></div>`).join('')}</div>
+     <div class="acts" style="width:100%"><button class="sm b-ed" onclick="editItem('${u.id}')">Edit details</button>
+     ${u.claimed?'':`<button class="sm b-ok" onclick="claim('${u.id}')">💵 Receive payment</button>`}
+     <button class="sm b-del" onclick="unclaim('${u.id}')">Remove all payments</button></div></div>`;}).join('')
+    :'<div class="empty">No payments for the selected dates.</div>';
+  $('cTot').textContent=peso(sum(list,u=>sum(rangePays(u),p=>p.amount)));
   renderClaimedSum(list);
 }
 function renderClaimedSum(list){
-  const n=list.length, tot=r2(sum(list,u=>u.amount)), cash=r2(sum(list,cashPart)), onl=r2(sum(list,onlinePart));
-  const split=list.filter(u=>cashPart(u)>0&&onlinePart(u)>0).length, bm={};
-  list.forEach(u=>pays(u).forEach(p=>{if(p.method!=='Cash')bm[p.method]=r2((bm[p.method]||0)+num(p.amount));}));
-  const avg=n?Math.round(list.reduce((s,u)=>s+daysAgo(u.date,u.dateClaimed),0)/n):0;
+  const P=[];list.forEach(u=>rangePays(u).forEach(p=>P.push(p)));
+  const tot=r2(sum(P,p=>p.amount)), cash=r2(sum(P.filter(p=>p.method==='Cash'),p=>p.amount)), onl=r2(tot-cash), bm={};
+  P.forEach(p=>{if(p.method!=='Cash')bm[p.method]=r2((bm[p.method]||0)+num(p.amount));});
+  const full=list.filter(u=>u.claimed), part=list.filter(u=>!u.claimed);
+  const avg=full.length?Math.round(full.reduce((s,u)=>s+daysAgo(u.date,u.dateClaimed),0)/full.length):0;
   const f=$('cFrom').value,t=$('cTo').value;
-  $('cSum').innerHTML=`<div class="sumbox">${kv('Range',(f||t)?((f?fdate(f):'start')+' – '+(t?fdate(t):'today')):'All dates')}
-    ${kv('Number claimed',n+(split?' ('+split+' split)':''))}${kv('Total claimed',peso(tot),'color:var(--ok)')}
+  $('cSum').innerHTML=`<div class="sumbox">${kv('Range (payment date)',(f||t)?((f?fdate(f):'start')+' – '+(t?fdate(t):'today')):'All dates')}
+    ${kv('Payments received',P.length)}${kv('Total received',peso(tot),'color:var(--ok)')}
     ${kv('↳ Cash',peso(cash))}${kv('↳ Online',peso(onl),'color:var(--onl)')}
     ${Object.entries(bm).map(([m,a])=>kv('&nbsp;&nbsp;&nbsp;'+esc(m),peso(a))).join('')}
-    ${kv('Average days before paid',n?avg+' day(s)':'—')}</div>`;
+    ${kv('Fully paid',full.length)}${kv('Partially paid (still with balance)',part.length+(part.length?' • balance '+peso(sum(part,balOf)):''),part.length?'color:var(--bad)':'')}
+    ${kv('Average days before fully paid',full.length?avg+' day(s)':'—')}</div>`;
 }
 function unclaim(id){const u=DB.unpaid.find(x=>x.id===id);
-  openSheet(`<h3>Move back to Unpaid?</h3><div class="note">${esc(u.name)} • ${peso(u.amount)} • claimed ${fdate(u.dateClaimed)}</div>
-   <button class="btn warnb" onclick="doUnclaim('${id}')">Yes, move back</button><button class="btn ghost" onclick="closeModal()">Cancel</button>`);}
-function doUnclaim(id){const u=DB.unpaid.find(x=>x.id===id);guardLocked([u.dateClaimed],()=>{u.claimed=false;u.dateClaimed='';u.payments=[];done('Moved back to Unpaid');});}
+  openSheet(`<h3>Remove all payments?</h3><div class="note">${esc(u.name)}${stubTxt(u)} • ${peso(u.amount)}</div>
+   <div class="note">${payHist(u)}</div><div class="note">The full amount goes back to Unpaid. To remove only one payment, use its Remove button.</div>
+   <button class="btn warnb" onclick="doUnclaim('${id}')">Yes, remove all payments</button><button class="btn ghost" onclick="closeModal()">Cancel</button>`);}
+function doUnclaim(id){const u=DB.unpaid.find(x=>x.id===id);guardLocked(pays(u).map(p=>p.date),()=>{u.payments=[];settle(u);done('Moved back to Unpaid');});}
+function editPay(uidv,pid){
+  const u=DB.unpaid.find(x=>x.id===uidv),p=pays(u).find(x=>x.id===pid); if(!p)return;
+  const max=r2(balOf(u)+num(p.amount));
+  openSheet(`<h3>Edit payment — ${esc(u.name)}${stubPill(u)}</h3>
+   <div class="sumbox" style="margin-top:6px">${kv('Total unpaid',peso(u.amount))}${kv('Other payments',peso(paidOf(u)-num(p.amount)))}${kv('Max for this payment',peso(max))}</div>
+   <div class="row"><div><label>Date paid</label><input type="date" id="ePD" value="${p.date}"></div>
+   <div><label>Amount (₱)</label><input id="ePA" type="number" inputmode="decimal" step="0.01" value="${p.amount}"></div></div>
+   <div class="row"><div><label>Paid via</label><select id="ePM">${['Cash',...ONLINE_METHODS].map(m=>`<option ${m===p.method?'selected':''}>${m}</option>`).join('')}</select></div>
+   <div><label>Reference no.</label><input id="ePR" value="${esc(p.ref||'')}"></div></div>
+   <button class="btn" onclick="savePay('${uidv}','${pid}')">Save payment</button>
+   <button class="btn red" onclick="removePay('${uidv}','${pid}')">Remove this payment</button>
+   <button class="btn ghost" onclick="closeModal()">Cancel</button>`);
+}
+function savePay(uidv,pid){
+  const u=DB.unpaid.find(x=>x.id===uidv),p=pays(u).find(x=>x.id===pid);
+  const a=num($('ePA').value), d=$('ePD').value||p.date, m=$('ePM').value, ref=m==='Cash'?'':$('ePR').value.trim(), max=r2(balOf(u)+num(p.amount));
+  if(a<=0){toast('Enter the amount');return;} if(a>max+0.004){toast('More than the balance — max '+peso(max),4000);return;}
+  if(d<u.date){toast('Payment date cannot be before the unpaid date ('+fdate(u.date)+')',4000);return;}
+  guardLocked([p.date,d],()=>{p.amount=a;p.date=d;p.method=m;p.ref=ref;settle(u);
+    done(u.claimed?'Payment updated — fully paid ✔':'Payment updated — balance '+peso(balOf(u)));});
+}
+function removePay(uidv,pid){
+  const u=DB.unpaid.find(x=>x.id===uidv),p=pays(u).find(x=>x.id===pid); if(!p)return;
+  guardLocked([p.date],()=>{u.payments=u.payments.filter(x=>x.id!==pid);settle(u);done('Payment removed — balance '+peso(balOf(u)));});
+}
 function editItem(id){
-  const u=DB.unpaid.find(x=>x.id===id); if(!u)return; _payTotal=num(u.amount);
+  const u=DB.unpaid.find(x=>x.id===id); if(!u)return;
+  const ps=pays(u).slice().sort((a,b)=>a.date.localeCompare(b.date));
   openSheet(`<h3>Edit ${u.claimed?'claimed':'unpaid'}</h3>
    <label>Name</label><input id="mN" value="${esc(u.name)}">
-   <label>Amount (₱)</label><input id="mA" type="number" inputmode="decimal" step="0.01" value="${u.amount}" oninput="payCheck()">
-   <div class="row"><div><label>Unpaid date</label><input type="date" id="mD" value="${u.date}"></div>
-   <div><label>Date claimed</label><input type="date" id="mDC" value="${u.dateClaimed||''}"></div></div>
-   <div class="note">With a Date claimed it goes to Claimed. Leave it blank to keep it Unpaid (payment below is ignored).</div>
-   ${payFields(num(u.amount),u.claimed?u.payments:null)}
+   <div class="row"><div><label>Claim stub #</label><input id="mStub" value="${esc(u.stub||'')}"></div>
+   <div><label>Amount (₱)</label><input id="mA" type="number" inputmode="decimal" step="0.01" value="${u.amount}"></div></div>
+   <label>Unpaid date</label><input type="date" id="mD" value="${u.date}">
+   <div class="split"><b>Payments</b> ${ps.length?'':'<span class="note">— none yet</span>'}
+     ${ps.map(p=>`<div class="srow"><div class="sinfo"><b>${fdate(p.date)} — ${esc(p.method)} ${peso(p.amount)}</b>${p.ref?'<br>Ref '+esc(p.ref):''}</div>
+       <button type="button" class="sm b-ed" onclick="editPay('${u.id}','${p.id}')">Edit</button>
+       <button type="button" class="sm b-del" onclick="removePay('${u.id}','${p.id}')">Remove</button></div>`).join('')}
+     <div class="kv"><span>Paid</span><b>${peso(paidOf(u))}</b></div><div class="kv"><span>Balance</span><b style="color:var(--bad)">${peso(balOf(u))}</b></div>
+     <div class="note">Tap Edit on a payment to change its date, amount, method or reference.</div></div>
    <button class="btn" onclick="saveEdit('${id}')">Save</button>
+   ${balOf(u)>0?`<button class="btn ok" onclick="claim('${id}')">💵 Receive payment</button>`:''}
    <button class="btn ghost" onclick="closeModal()">Cancel</button>`);
-  payCheck();
 }
 function saveEdit(id){
   const u=DB.unpaid.find(x=>x.id===id), n=$('mN').value.trim(), a=num($('mA').value);
   if(!n||a<=0){toast('Missing details');return;}
-  const dc=$('mDC').value; let ps=[];
-  if(dc){ps=readPays();if(!ps)return;}
-  const nd=$('mD').value||u.date;guardLocked([u.date,u.dateClaimed,nd,dc],()=>{u.name=n;u.amount=a;u.date=nd;u.dateClaimed=dc;u.claimed=!!dc;u.payments=ps;done('Updated ✔');});
+  if(a<paidOf(u)-0.004){toast('Amount cannot be less than what was already paid ('+peso(paidOf(u))+')',4000);return;}
+  const st=$('mStub').value.trim().replace(/^#/,''), du=stubTaken(st,u.id);
+  if(du&&a>paidOf(u)){toast('Claim stub #'+st+' is already used by '+du.name,4000);return;}
+  const nd=$('mD').value||u.date;
+  if(pays(u).some(p=>p.date<nd)){toast('Unpaid date cannot be after a payment date',4000);return;}
+  const touched=n!==u.name||st!==(u.stub||'')||Math.abs(a-num(u.amount))>0.004?pays(u).map(p=>p.date):[];
+  guardLocked([u.date,nd,...touched],()=>{u.name=n;u.stub=st;u.amount=a;u.date=nd;settle(u);done('Updated ✔');});
 }
 
 /* ================= Online payments ================= */
@@ -841,15 +997,16 @@ function addOnline(){
 }
 function renderOnline(){
   const d=$('oDate').value||today(); $('oDayLbl').textContent=fdate(d);
-  const c=compute(d,0), C=DB.unpaid.filter(u=>u.claimed&&u.dateClaimed===d&&onlinePart(u)>0), O=DB.online.filter(o=>o.date===d);
+  const c=compute(d,0), O=DB.online.filter(o=>o.date===d), C=[];
+  DB.unpaid.forEach(u=>pays(u).forEach(p=>{if(p.date===d&&p.method!=='Cash')C.push({u,p});}));
   $('oSum').innerHTML=`<div class="sumbox">${Object.entries(c.byMethod).map(([m,a])=>kv(esc(m),peso(a))).join('')||kv('Online','₱0.00')}
     ${kv('Online sales (deducted from cash)',peso(c.online))}${kv('Claimed online',peso(c.claimedOn))}
     ${kv('<b>TOTAL ONLINE</b>',peso(c.onlineRecv),'color:var(--onl)')}</div>`;
   const rows=[...O.map(o=>`<div class="item"><div class="info"><div class="nm">${esc(o.name||'(no name)')}</div>
       <div class="meta"><span class="pill on">${esc(o.method)}</span> Sale${o.ref?' • Ref '+esc(o.ref):''}</div></div><div class="amt">${peso(o.amount)}</div>
       <button class="sm b-ed" onclick="editOnline('${o.id}')">Edit</button></div>`),
-    ...C.map(u=>`<div class="item"><div class="info"><div class="nm">${esc(u.name)}</div>
-      <div class="meta">${payPills(u.payments)} Claimed (unpaid since ${fdate(u.date)})</div></div><div class="amt">${peso(onlinePart(u))}</div>
+    ...C.map(({u,p})=>`<div class="item"><div class="info"><div class="nm">${esc(u.name)}${stubPill(u)}</div>
+      <div class="meta"><span class="pill on">${esc(p.method)}</span> ${u.claimed?'Claimed':'Partial payment'} (unpaid since ${fdate(u.date)})${p.ref?' • Ref '+esc(p.ref):''}</div></div><div class="amt">${peso(p.amount)}</div>
       <button class="sm b-ed" onclick="editItem('${u.id}')">Edit</button></div>`)];
   $('oList').innerHTML=rows.length?rows.join(''):'<div class="empty">No online payments on this date.</div>';
 }
@@ -875,8 +1032,8 @@ const SP={e:{vals:{}},m:{vals:{}}};
 function splitDays(date,excl){
   const ym=date.slice(0,7);  // only this month's sales can be used
   return DB.reports.filter(r=>r.date<date&&r.date.startsWith(ym)&&r.snap).sort((a,b)=>a.date.localeCompare(b.date)).map(r=>{
-    const taken=takenFrom(r.date,excl);
-    return {date:r.date,sales:r.snap.sales,coh:r.snap.coh,taken,avail:r2(Math.max(0,r.snap.coh-taken)),locked:isLocked(r)};});
+    const taken=takenFrom(r.date,excl), col=collectedFrom(r.date);
+    return {date:r.date,sales:r.snap.sales,coh:r.snap.coh,taken,col,avail:r2(Math.max(0,r.snap.coh-taken-col)),locked:isLocked(r)};});
 }
 function renderSplit(p){
   const box=$(p+'Split'); if(!box)return;
@@ -890,7 +1047,7 @@ function renderSplit(p){
    <div class="row" style="align-items:center"><b style="flex:1.4">Take ${peso(st.amt)} from:</b>
      <button type="button" class="sm b-ok" onclick="autoSplit('${p}')">Auto-fill (oldest first)</button></div>
    ${st.days.length?st.days.map(d=>`<div class="srow"><div class="sinfo"><b>${fdate(d.date).replace(/, \d{4}$/,'')} ${d.locked?'🔒':'🔓'} — Sales ${peso(d.sales)}</b><br>
-       Cash on hand ${peso(d.coh)}${d.taken?' • Already taken '+peso(d.taken):''}<br>
+       Cash on hand ${peso(d.coh)}${d.taken?' • Already taken '+peso(d.taken):''}${d.col?' • Collected '+peso(d.col):''}<br>
        <span style="color:var(--ok)">Available <b style="color:var(--ok)">${peso(d.avail)}</b></span></div>
        <input type="number" inputmode="decimal" step="0.01" placeholder="0" value="${st.vals[d.date]||''}" oninput="splitInput('${p}','${d.date}',this.value)"></div>`).join('')
      :'<div class="note">No previous days this month with cash available. Only days in '+monthName(date.slice(0,7))+' with a saved report can be used.</div>'}
@@ -974,13 +1131,13 @@ function delExp(id){const e=DB.expenses.find(x=>x.id===id);guardLocked(selfPart(
 function outstanding(){
   const open=DB.unpaid.filter(u=>!u.claimed).sort((a,b)=>a.date.localeCompare(b.date));
   const bk=[{l:'0–7 days',n:0,a:0},{l:'8–30 days',n:0,a:0},{l:'31+ days',n:0,a:0}];
-  open.forEach(u=>{const d=daysAgo(u.date),i=d<=7?0:d<=30?1:2;bk[i].n++;bk[i].a=r2(bk[i].a+num(u.amount));});
-  const g={};open.forEach(u=>{const k=normName(u.name);(g[k]=g[k]||{name:u.name.trim(),n:0,a:0,oldest:u.date});g[k].n++;g[k].a=r2(g[k].a+num(u.amount));if(u.date<g[k].oldest)g[k].oldest=u.date;});
-  return {open,n:open.length,amt:r2(sum(open,u=>u.amount)),buckets:bk,oldest:open[0],byCust:Object.values(g).sort((a,b)=>b.a-a.a)};
+  open.forEach(u=>{const d=daysAgo(u.date),i=d<=7?0:d<=30?1:2;bk[i].n++;bk[i].a=r2(bk[i].a+balOf(u));});
+  const g={};open.forEach(u=>{const k=normName(u.name);(g[k]=g[k]||{name:u.name.trim(),n:0,a:0,oldest:u.date});g[k].n++;g[k].a=r2(g[k].a+balOf(u));if(u.date<g[k].oldest)g[k].oldest=u.date;});
+  return {open,n:open.length,amt:r2(sum(open,balOf)),partial:open.filter(isPartial).length,buckets:bk,oldest:open[0],byCust:Object.values(g).sort((a,b)=>b.a-a.a)};
 }
 function renderUnpaidSum(){
   const o=outstanding(), multi=o.byCust.filter(c=>c.n>1);
-  $('uSum').innerHTML=`<div class="sumbox">${kv('Outstanding count',o.n)}${kv('Outstanding total',peso(o.amt),'color:var(--bad)')}
+  $('uSum').innerHTML=`<div class="sumbox">${kv('Outstanding count',o.n+(o.partial?' ('+o.partial+' partially paid)':''))}${kv('Outstanding balance',peso(o.amt),'color:var(--bad)')}
     ${kv('Oldest',o.oldest?esc(o.oldest.name)+' • '+daysAgo(o.oldest.date)+' day(s)':'—')}
     <div class="aging">${o.buckets.map(b=>`<div>${b.l}<b>${peso(b.a)}</b>${b.n} item(s)</div>`).join('')}</div></div>`+
     (multi.length?'<div class="note" style="margin-bottom:4px">Customers with more than one unpaid:</div>'+multi.map(c=>kv(esc(c.name)+` <span class="note">(${c.n}x)</span>`,peso(c.a),'color:var(--bad)')).join(''):'');
@@ -988,20 +1145,21 @@ function renderUnpaidSum(){
 function monthData(ym){
   const dates=new Set();
   DB.reports.forEach(r=>{if(r.date.startsWith(ym))dates.add(r.date);});
-  DB.unpaid.forEach(u=>{if(u.date.startsWith(ym))dates.add(u.date);if(u.claimed&&(u.dateClaimed||'').startsWith(ym))dates.add(u.dateClaimed);});
+  DB.unpaid.forEach(u=>{if(u.date.startsWith(ym))dates.add(u.date);pays(u).forEach(p=>{if(p.date.startsWith(ym))dates.add(p.date);});});
   DB.expenses.forEach(e=>{if(e.date.startsWith(ym))dates.add(e.date);});
   DB.online.forEach(o=>{if(o.date.startsWith(ym))dates.add(o.date);});
-  const days=[...dates].sort().map(d=>{const v=dayView(d);v.date=d;if(v.saved){v.taken=takenFrom(d);v.left=r2(v.coh-v.taken);}return v;});
+  const days=[...dates].sort().map(d=>{const v=dayView(d);v.date=d;if(v.saved){v.taken=takenFrom(d);v.collected=collectedFrom(d);v.left=r2(v.coh-v.taken-v.collected);}return v;});
   const sv=days.filter(c=>c.saved), T=k=>r2(sv.reduce((s,c)=>s+(c[k]||0),0));
   const tot={sales:T('sales'),unpaid:T('unpaid'),claimed:T('claimed'),claimedOn:T('claimedOn'),online:T('online'),onlineRecv:T('onlineRecv'),exp:T('exp'),coh:T('coh'),
-    taken:T('taken'),left:T('left'),expOld:T('expOld'),reports:sv.length,byMethod:{}};
+    taken:T('taken'),collected:T('collected'),left:T('left'),expOld:T('expOld'),reports:sv.length,byMethod:{}};
   sv.forEach(c=>Object.entries(c.byMethod||{}).forEach(([m,a])=>{tot.byMethod[m]=r2((tot.byMethod[m]||0)+a);}));
   const rep=days.filter(c=>c.saved); tot.avg=rep.length?r2(tot.sales/rep.length):0;
   const best=rep.reduce((b,c)=>!b||c.sales>b.sales?c:b,null);
   const by=(a,k)=>a.sort((x,y)=>x[k].localeCompare(y[k]));
   const unpaidM=by(DB.unpaid.filter(u=>u.date.startsWith(ym)),'date');
-  const claimedM=by(DB.unpaid.filter(u=>u.claimed&&(u.dateClaimed||'').startsWith(ym)),'dateClaimed');
-  return {ym,days,tot,best,unpaidM,claimedM,stillM:unpaidM.filter(u=>!u.claimed),
+  const claimedM=DB.unpaid.filter(u=>pays(u).some(p=>p.date.startsWith(ym))).sort((a,b)=>lastPay(a).localeCompare(lastPay(b)));
+  const paidInM=u=>r2(sum(pays(u).filter(p=>p.date.startsWith(ym)),p=>p.amount));
+  return {ym,days,tot,best,unpaidM,claimedM,paidInM,stillM:unpaidM.filter(u=>!u.claimed),
     expM:by(DB.expenses.filter(e=>e.date.startsWith(ym)),'date'),onlineM:by(DB.online.filter(o=>o.date.startsWith(ym)),'date')};
 }
 const dayStatus=c=>!c.saved?'No report':(c.changed?'Changed after save':(c.locked?'Locked':'Unlocked'));
@@ -1012,7 +1170,8 @@ function renderSum(){
     ${kv('Less: Expenses','('+peso(t.exp)+')','color:var(--bad)')}
     ${kv('<b>TOTAL CASH ON HAND</b>','<span style="font-size:17px">'+peso(t.coh)+'</span>')}
     ${kv('Taken later for expenses (e.g. salary)','('+peso(t.taken)+')','color:var(--bad)')}
-    ${kv('<b>Cash remaining from these days</b>',peso(t.left),'color:var(--ok)')}</div>
+    ${kv('Collected','('+peso(t.collected)+')','color:var(--bad)')}
+    ${kv('<b>Cash not yet collected</b>',peso(t.left),'color:var(--ok)')}</div>
     <div class="sumbox"><b style="color:var(--onl)">Online received</b>
     ${Object.entries(t.byMethod).map(([m,a])=>kv(esc(m),peso(a))).join('')}
     ${kv('Online sales',peso(t.online))}${kv('Claimed online',peso(t.claimedOn))}${kv('<b>TOTAL ONLINE</b>',peso(t.onlineRecv),'color:var(--onl)')}</div>
@@ -1020,11 +1179,11 @@ function renderSum(){
     ${kv('Highest sales',M.best?peso(M.best.sales)+' ('+fdate(M.best.date)+')':'—')}`;
   const sh=d=>{const [,m,dd]=d.split('-');return (+m)+'/'+(+dd);};
   const mark=c=>!c.saved?' *':(c.changed?' ⚠':(c.locked?' 🔒':' 🔓'));
-  $('sTbl').innerHTML=M.days.length?`<tr><th>Date</th><th>Sales</th><th>Unpaid</th><th>Claim</th><th>Online</th><th>Exp.</th><th>Cash</th><th>Left</th></tr>`+
+  $('sTbl').innerHTML=M.days.length?`<tr><th>Date</th><th>Sales</th><th>Unpaid</th><th>Claim</th><th>Online</th><th>Exp.</th><th>Cash</th><th>Coll.</th><th>Left</th></tr>`+
     M.days.map(c=>`<tr class="${c.saved?'':'nr'}" onclick="openReport('${c.date}')"><td>${sh(c.date)}${mark(c)}</td>
       <td>${c.saved?nf(c.sales):'—'}</td><td>${nf(c.unpaid)}</td><td>${nf(c.claimed)}</td><td>${nf(c.online)}</td><td>${nf(c.exp)}</td>
-      <td><b>${c.saved?nf(c.coh):'—'}</b></td><td>${c.saved?nf(c.left):'—'}</td></tr>`).join('')+
-    `<tr class="tt"><td>TOTAL</td><td>${nf(t.sales)}</td><td>${nf(t.unpaid)}</td><td>${nf(t.claimed)}</td><td>${nf(t.online)}</td><td>${nf(t.exp)}</td><td>${nf(t.coh)}</td><td>${nf(t.left)}</td></tr>`
+      <td><b>${c.saved?nf(c.coh):'—'}</b></td><td>${c.saved?nf(c.collected):'—'}</td><td>${c.saved?nf(c.left):'—'}</td></tr>`).join('')+
+    `<tr class="tt"><td>TOTAL</td><td>${nf(t.sales)}</td><td>${nf(t.unpaid)}</td><td>${nf(t.claimed)}</td><td>${nf(t.online)}</td><td>${nf(t.exp)}</td><td>${nf(t.coh)}</td><td>${nf(t.collected)}</td><td>${nf(t.left)}</td></tr>`
     :'<tr><td class="empty">No records this month.</td></tr>';
   // ---- Expenses this month, with the daily sales each was paid from ----
   const short=d=>fdate(d).replace(/, \d{4}$/,'');
@@ -1044,7 +1203,7 @@ function renderSum(){
     :'<div class="empty">No expenses this month.</div>';
   const o=outstanding();
   $('sUC').innerHTML=`<div class="sumbox">${kv('New unpaid this month',M.unpaidM.length+' • '+peso(sum(M.unpaidM,u=>u.amount)))}
-    ${kv('Claimed this month',M.claimedM.length+' • '+peso(sum(M.claimedM,u=>u.amount)),'color:var(--ok)')}
+    ${kv('Payments received this month (full + partial)',M.claimedM.length+' customer(s) • '+peso(sum(M.claimedM,M.paidInM)),'color:var(--ok)')}
     ${kv('This month\'s unpaid still not paid',M.stillM.length+' • '+peso(sum(M.stillM,u=>u.amount)),'color:var(--bad)')}</div>
     ${kv('All outstanding unpaid (any month)',o.n+' • '+peso(o.amt),'color:var(--bad)')}`;
 }
@@ -1074,7 +1233,7 @@ function doRestore(){
   try{const d=JSON.parse($('mR').value);if(!d||!Array.isArray(d.unpaid))throw 0;
     if(!confirm('Replace all data on this phone?'))return;
     const keepPin=DB.settings.pin;
-    DB={unpaid:d.unpaid||[],expenses:d.expenses||[],online:d.online||[],reports:d.reports||[],settings:Object.assign({shop:'',pin:''},d.settings||{})};
+    DB={unpaid:d.unpaid||[],expenses:d.expenses||[],online:d.online||[],reports:d.reports||[],collections:d.collections||[],settings:Object.assign({shop:'',pin:''},d.settings||{})};
     if(!DB.settings.pin&&keepPin)DB.settings.pin=keepPin;
     normalize();save();closeModal();renderAll();toast('Restored ✔');}
   catch(e){toast('Invalid backup');}
@@ -1157,29 +1316,115 @@ function saveBytes(bytes,name,mime){
 
 const shopName=()=>DB.settings.shop||'Laundry';
 
+/* ================= Collection ================= */
+function dateList(a,b){const out=[];let d=new Date(a+'T00:00:00');const e=new Date(b+'T00:00:00');
+  while(d<=e&&out.length<400){out.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'));d.setDate(d.getDate()+1);}return out;}
+function uncollectedDays(){return DB.reports.filter(r=>r.snap&&cashLeft(r.date)>0.004).map(r=>r.date).sort();}
+function collRange(k){
+  const t=today();
+  if(k==='all'){const u=uncollectedDays();$('kFrom').value=u[0]||t;$('kTo').value=t;}
+  else if(k==='month'){$('kFrom').value=t.slice(0,8)+'01';$('kTo').value=t;}
+  else{const x=new Date(t+'T00:00:00');x.setDate(x.getDate()-6);
+    $('kFrom').value=x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');$('kTo').value=t;}
+  renderColl();
+}
+function collDays(){
+  const f=$('kFrom').value,t=$('kTo').value; if(!f||!t||f>t)return [];
+  return dateList(f,t).map(d=>{const r=reportFor(d);
+    if(!r||!r.snap){const hasRec=DB.unpaid.some(u=>u.date===d||pays(u).some(p=>p.date===d))||DB.expenses.some(e=>e.date===d)||DB.online.some(o=>o.date===d);
+      return {date:d,status:hasRec?'noreport':'none'};}
+    const taken=takenFrom(d),col=collectedFrom(d),left=r2(r.snap.coh-taken-col);
+    return {date:d,status:isLocked(r)?'ok':'unlocked',sales:r.snap.sales,coh:r.snap.coh,taken,col,left,
+      amt:isLocked(r)?r2(Math.max(0,left)):0};
+  }).filter(x=>x.status!=='none');
+}
+function renderColl(){
+  if(!$('kFrom').value){collRange('all');return;}
+  const D=collDays(), sh=d=>fdate(d).replace(/, \d{4}$/,''), tot=r2(sum(D,x=>x.amt||0));
+  const ok=D.filter(x=>x.status==='ok'||x.status==='unlocked');
+  $('kTbl').innerHTML=D.length?`<tr><th>Date</th><th>Sales</th><th>Cash</th><th>Exp.</th><th>Coll.</th><th>To collect</th></tr>`+
+    D.map(x=>x.status==='noreport'?`<tr class="nr"><td>${sh(x.date)} *</td><td colspan="5" style="text-align:left">No saved report — not included</td></tr>`
+      :`<tr class="${x.amt>0?'':'nr'}" onclick="openReport('${x.date}')"><td>${sh(x.date)} ${x.status==='unlocked'?'🔓':'🔒'}</td><td>${nf(x.sales)}</td><td>${nf(x.coh)}</td>
+        <td>${x.taken?nf(x.taken):'—'}</td><td>${x.col?nf(x.col):'—'}</td><td><b>${x.status==='unlocked'?'locked first':nf(x.amt)}</b></td></tr>`).join('')+
+    `<tr class="tt"><td>TOTAL</td><td>${nf(sum(ok,x=>x.sales))}</td><td>${nf(sum(ok,x=>x.coh))}</td><td>${nf(sum(ok,x=>x.taken))}</td><td>${nf(sum(ok,x=>x.col))}</td><td>${nf(tot)}</td></tr>`
+    :'<tr><td class="empty">No saved reports in this range.</td></tr>';
+  const nr=D.filter(x=>x.status==='noreport').length, ul=D.filter(x=>x.status==='unlocked').length;
+  $('kWarn').innerHTML=(nr?`<div class="warn" style="margin-top:8px">* ${nr} day(s) have records but no saved report — their cash is not included. Save those reports first.</div>`:'')+
+    (ul?`<div class="warn" style="margin-top:8px">🔓 ${ul} day(s) are unlocked — save &amp; lock the report first to include them.</div>`:'');
+  $('kTot').textContent=peso(tot);
+  if(!$('kDate').value)$('kDate').value=today();
+  const H=[...(DB.collections||[])].sort((a,b)=>(b.date+b.at).localeCompare(a.date+a.at));
+  $('kHist').innerHTML=H.length?H.map(c=>`<div class="item" onclick="viewColl('${c.id}')"><div class="info"><div class="nm">${fdate(c.date)} — ${esc(c.name)}</div>
+    <div class="meta">${sh(c.from)} – ${fdate(c.to)} • ${c.items.length} day(s)${c.note?' • '+esc(c.note):''}</div></div><div class="amt" style="color:var(--ok)">${peso(c.total)}</div></div>`).join('')
+    :'<div class="empty">No collections yet.</div>';
+}
+function saveColl(){
+  const D=collDays().filter(x=>x.amt>0), tot=r2(sum(D,x=>x.amt)), name=$('kName').value.trim(), date=$('kDate').value||today();
+  if(!tot){toast('Nothing to collect in this range');return;}
+  if(!name){toast('Enter who collected the cash');$('kName').focus();return;}
+  const c={id:uid(),date,name,note:$('kNote').value.trim(),from:D[0].date,to:D[D.length-1].date,
+    items:D.map(x=>({date:x.date,amount:x.amt,sales:x.sales,coh:x.coh})),total:tot,at:Date.now()};
+  DB.collections.push(c);$('kNote').value='';
+  done('Collection saved — '+peso(tot));viewColl(c.id);
+}
+function collText(c){
+  const W=30, ln=(l,v)=>l+' '.repeat(Math.max(1,W-l.length-v.length))+v;
+  return [(DB.settings.shop||'LAUNDRY').toUpperCase(),'CASH COLLECTION','Date collected: '+fdate(c.date),'Collected by: '+c.name,
+    'Days: '+fdate(c.from)+' – '+fdate(c.to),'-'.repeat(W),...c.items.map(i=>ln(fdate(i.date),peso(i.amount))),'='.repeat(W),
+    ln('TOTAL COLLECTED',peso(c.total)),...(c.note?['','Note: '+c.note]:[])].join('\n');
+}
+function viewColl(id){
+  const c=DB.collections.find(x=>x.id===id); if(!c)return;
+  openSheet(`<h3>💰 Collection — ${peso(c.total)}</h3>
+   <div class="sumbox" style="margin-top:8px">${kv('Date collected',fdate(c.date))}${kv('Collected by',esc(c.name))}${kv('Days',fdate(c.from)+' – '+fdate(c.to))}${c.note?kv('Note',esc(c.note)):''}</div>
+   ${c.items.map(i=>kv(fdate(i.date)+(i.sales!=null?' <span class="note">(sales '+peso(i.sales)+')</span>':''),peso(i.amount))).join('')}
+   <div class="tot" style="font-size:17px"><span>TOTAL COLLECTED</span><span style="color:var(--ok)">${peso(c.total)}</span></div>
+   <button class="btn ghost" onclick="shareText(collText(DB.collections.find(x=>x.id==='${id}')),'Cash collection')">Share / copy slip</button>
+   <button class="btn ghost" onclick="exportColl('${id}')">⬇ Export to Excel</button>
+   <button class="btn red" onclick="delColl('${id}')">Delete collection</button>
+   <button class="btn ghost" onclick="closeModal()">Close</button>`);
+}
+function delColl(id){pinGate('Delete collection',()=>{
+  openSheet(`<h3>Delete this collection?</h3><div class="note">The days will show as uncollected again.</div>
+   <button class="btn red" onclick="DB.collections=DB.collections.filter(x=>x.id!=='${id}');closeModal();done('Collection deleted')">Delete</button>
+   <button class="btn ghost" onclick="closeModal()">Cancel</button>`);});}
+function exportColl(id){
+  const c=DB.collections.find(x=>x.id===id);
+  saveBytes(makeXlsx([{name:'Collection',cols:[16,14,14,14],rows:[[B(shopName()+' — Cash collection')],[],
+    ['Date collected',c.date],['Collected by',c.name],['Days',c.from+' to '+c.to],...(c.note?[['Note',c.note]]:[]),[],
+    [H('Date'),H('Daily sales'),H('Cash on hand'),H('Collected')],
+    ...c.items.map(i=>[i.date,i.sales!=null?MON(i.sales):'',i.coh!=null?MON(i.coh):'',MON(i.amount)]),
+    [B('TOTAL'),'','',MONB(c.total)]]}]),'Collection_'+c.date+'_'+c.name.replace(/[^\w]+/g,'_')+'.xlsx',XLSX_MIME);
+}
+
 /* ================= Excel exports ================= */
 function sheetOutstanding(){
   const o=outstanding();
   const rows=[[B(shopName()+' — All outstanding unpaid (as of '+fdate(today())+')')],[],
-    [H('Name'),H('Amount'),H('Unpaid date'),H('Days unpaid'),H('Customer total balance')],
-    ...o.open.map(u=>[u.name,MON(u.amount),u.date,daysAgo(u.date),MON(balanceOf(u.name).amt)]),
-    [B('TOTAL ('+o.n+')'),MONB(o.amt)],[],
+    [H('Name'),H('Claim stub #'),H('Amount'),H('Paid so far'),H('Balance'),H('Unpaid date'),H('Days unpaid'),H('Customer total balance'),H('Payments')],
+    ...o.open.map(u=>[u.name,u.stub||'',MON(u.amount),MON(paidOf(u)),MON(balOf(u)),u.date,daysAgo(u.date),MON(balanceOf(u.name).amt),payHistText(u)]),
+    [B('TOTAL ('+o.n+')'),'',MONB(sum(o.open,u=>u.amount)),MONB(sum(o.open,paidOf)),MONB(o.amt)],[],
     [H('Aging'),H('Amount'),H('Count')],...o.buckets.map(b=>[b.l,MON(b.a),b.n])];
   if(o.byCust.length){rows.push([],[H('Per customer'),H('Balance'),H('Count'),H('Oldest')]);o.byCust.forEach(c=>rows.push([c.name,MON(c.a),c.n,c.oldest]));}
-  return {name:'Unpaid (all)',cols:[26,14,14,12,20],rows};
+  return {name:'Unpaid (all)',cols:[26,12,13,13,13,13,11,18,44],rows};
 }
-function sheetClaimed(list,title){
-  const onl=u=>payParts(u.payments).filter(p=>p.method!=='Cash');
-  return {name:'Claimed',cols:[24,13,13,13,12,12,12,15,18],rows:[[B(title)],[],
-    [H('Name'),H('Amount'),H('Unpaid date'),H('Date claimed'),H('Days to pay'),H('Cash'),H('Online'),H('Online via'),H('Reference no.')],
-    ...list.map(u=>[u.name,MON(u.amount),u.date,u.dateClaimed,daysAgo(u.date,u.dateClaimed),MON(cashPart(u)),MON(onlinePart(u)),
-      onl(u).map(p=>p.method).join(', '),onl(u).map(p=>p.ref).filter(Boolean).join(', ')]),
-    [B('TOTAL ('+list.length+')'),MONB(sum(list,u=>u.amount)),'','','',MONB(sum(list,cashPart)),MONB(sum(list,onlinePart))]]};
+function sheetClaimed(list,title,inR){
+  inR=inR||(()=>true);
+  const rp=u=>pays(u).filter(inR), on=u=>rp(u).filter(p=>p.method!=='Cash');
+  const rows=list.map(u=>[u.name,u.stub||'',MON(u.amount),MON(paidOf(u)),MON(balOf(u)),u.claimed?'Fully paid':'Partial',u.date,u.claimed?u.dateClaimed:'',
+    u.claimed?daysAgo(u.date,u.dateClaimed):'',MON(sum(rp(u).filter(p=>p.method==='Cash'),p=>p.amount)),MON(sum(on(u),p=>p.amount)),
+    [...new Set(on(u).map(p=>p.method))].join(', '),on(u).map(p=>p.ref).filter(Boolean).join(', '),payHistText(u)]);
+  return {name:'Claimed',cols:[24,12,12,12,12,11,13,14,10,12,12,14,16,50],rows:[[B(title)],[],
+    [H('Name'),H('Claim stub #'),H('Total'),H('Paid so far'),H('Balance'),H('Status'),H('Unpaid date'),H('Date fully paid'),H('Days to pay'),
+     H('Cash received (period)'),H('Online received (period)'),H('Online via'),H('Reference no.'),H('All payments (date, method, amount)')],
+    ...rows,
+    [B('TOTAL ('+list.length+')'),'',MONB(sum(list,u=>u.amount)),MONB(sum(list,paidOf)),MONB(sum(list,balOf)),'','','','',
+      MONB(sum(list,u=>sum(rp(u).filter(p=>p.method==='Cash'),p=>p.amount))),MONB(sum(list,u=>sum(on(u),p=>p.amount)))]]};
 }
 function sheetOnline(M,mn){
   const t=M.tot, rows=[];
   M.onlineM.forEach(o=>rows.push([o.date,o.method,MON(o.amount),'Sale',o.name||'',o.ref||'']));
-  M.claimedM.forEach(u=>payParts(u.payments).filter(p=>p.method!=='Cash').forEach(p=>rows.push([u.dateClaimed,p.method,MON(p.amount),'Claimed',u.name,p.ref||''])));
+  DB.unpaid.forEach(u=>pays(u).forEach(p=>{if(p.method!=='Cash'&&num(p.amount)>0&&p.date.startsWith(M.ym))rows.push([p.date,p.method,MON(p.amount),u.claimed?'Claimed':'Partial payment',u.name,p.ref||'']);}));
   rows.sort((a,b)=>a[0].localeCompare(b[0]));
   return {name:'Online',cols:[13,16,14,10,24,18],rows:[[B(shopName()+' — Online payments, '+mn)],[],
     [H('Date'),H('Via'),H('Amount'),H('Type'),H('Name'),H('Reference no.')],...rows,
@@ -1189,16 +1434,16 @@ function sheetOnline(M,mn){
 function exportOnline(){const ym=($('oDate').value||today()).slice(0,7);saveBytes(makeXlsx([sheetOnline(monthData(ym),monthName(ym))]),'Online_'+ym+'.xlsx',XLSX_MIME);}
 function exportUnpaid(){saveBytes(makeXlsx([sheetOutstanding()]),'Unpaid_'+today()+'.xlsx',XLSX_MIME);}
 function exportClaimed(){
-  const list=claimedList().sort((a,b)=>a.dateClaimed.localeCompare(b.dateClaimed)), f=$('cFrom').value, t=$('cTo').value;
+  const list=claimedList().sort((a,b)=>lastPay(a).localeCompare(lastPay(b))), f=$('cFrom').value, t=$('cTo').value;
   const rng=(f||t)?((f?fdate(f):'start')+' – '+(t?fdate(t):fdate(today()))):'All';
-  saveBytes(makeXlsx([sheetClaimed(list,shopName()+' — Claimed ('+rng+')')]),'Claimed_'+(f||'all')+'_'+(t||today())+'.xlsx',XLSX_MIME);
+  saveBytes(makeXlsx([sheetClaimed(list,shopName()+' — Claimed & partial payments ('+rng+')',inRange)]),'Claimed_'+(f||'all')+'_'+(t||today())+'.xlsx',XLSX_MIME);
 }
 function exportMonth(){
   const ym=$('mMonth').value||today().slice(0,7), M=monthData(ym), t=M.tot, mn=monthName(ym), o=outstanding();
   const S=[[B(shopName()+' — Monthly summary')],[B(mn)],[],
     [H('Total Sales'),MON(t.sales)],[H('Less: Unpaid'),MON(-t.unpaid)],[H('Add: Claimed (Cash)'),MON(t.claimed)],
     [H('Less: Online Payment'),MON(-t.online)],[H('Less: Expenses'),MON(-t.exp)],[B('TOTAL CASH ON HAND'),MONB(t.coh)],
-    ['Taken later for expenses (e.g. salary)',MON(-t.taken)],[B('Cash remaining from these days'),MONB(t.left)],[],
+    ['Taken later for expenses (e.g. salary)',MON(-t.taken)],['Collected',MON(-t.collected)],[B('Cash not yet collected'),MONB(t.left)],[],
     [B('Online received')],...Object.entries(t.byMethod).map(([m,a])=>[m,MON(a)]),
     ['Online sales',MON(t.online)],['Claimed online',MON(t.claimedOn)],[B('TOTAL ONLINE'),MONB(t.onlineRecv)],[],
     [B('Expenses paid this month')],
@@ -1208,20 +1453,20 @@ function exportMonth(){
     ['Days with a report',t.reports],['Average sales per day',MON(t.avg)],['Highest sales',M.best?MON(M.best.sales):'',M.best?M.best.date:''],[],
     [B('Unpaid and claimed')],
     ['New unpaid this month ('+M.unpaidM.length+')',MON(sum(M.unpaidM,u=>u.amount))],
-    ['Claimed this month ('+M.claimedM.length+')',MON(sum(M.claimedM,u=>u.amount))],
+    ['Payments received this month, full + partial ('+M.claimedM.length+')',MON(sum(M.claimedM,M.paidInM))],
     ["This month's unpaid still not paid ("+M.stillM.length+')',MON(sum(M.stillM,u=>u.amount))],
     ['All outstanding unpaid, any month ('+o.n+')',MON(o.amt)],[],
     ['Totals include only days with a saved report, using the locked report figures.'],['Generated: '+fdate(today())]];
-  const daily={name:'Daily Sales',cols:[12,16,13,13,15,13,13,15,15,15,13,24,7,36],rows:[[B(shopName()+' — Daily sales, '+mn)],[],
-    [H('Date'),H('Staff'),H('Total Sales'),H('Less: Unpaid'),H('Add: Claimed (Cash)'),H('Less: Online'),H('Less: Expenses'),H('Cash on Hand'),H('Taken later for expenses'),H('Remaining cash'),H('Total Online'),H('Report status'),H('Edits'),H('Last change reason')],
+  const daily={name:'Daily Sales',cols:[12,16,13,13,15,13,13,15,15,13,15,13,24,7,36],rows:[[B(shopName()+' — Daily sales, '+mn)],[],
+    [H('Date'),H('Staff'),H('Total Sales'),H('Less: Unpaid'),H('Add: Claimed (Cash)'),H('Less: Online'),H('Less: Expenses'),H('Cash on Hand'),H('Taken later for expenses'),H('Collected'),H('Remaining cash'),H('Total Online'),H('Report status'),H('Edits'),H('Last change reason')],
     ...M.days.map(c=>[c.date,c.staff,c.saved?MON(c.sales):'',MON(c.unpaid),MON(c.claimed),MON(c.online),MON(c.exp),c.saved?MON(c.coh):'',
-      c.saved?MON(c.taken):'',c.saved?MON(c.left):'',MON(c.onlineRecv),c.saved?dayStatus(c):'No report (not in totals)',c.saved?editCount(reportFor(c.date)):'',
+      c.saved?MON(c.taken):'',c.saved?MON(c.collected):'',c.saved?MON(c.left):'',MON(c.onlineRecv),c.saved?dayStatus(c):'No report (not in totals)',c.saved?editCount(reportFor(c.date)):'',
       c.saved?((historyOf(reportFor(c.date)).filter(h=>h.type==='edited').slice(-1)[0]||{}).reason||''):'']),
-    [B('TOTAL'),'',MONB(t.sales),MONB(t.unpaid),MONB(t.claimed),MONB(t.online),MONB(t.exp),MONB(t.coh),MONB(t.taken),MONB(t.left),MONB(t.onlineRecv)]]};
-  const unp={name:'Unpaid',cols:[24,13,13,13,11],rows:[[B('Unpaid recorded — '+mn)],[],
-    [H('Name'),H('Amount'),H('Unpaid date'),H('Date claimed'),H('Status')],
-    ...M.unpaidM.map(u=>[u.name,MON(u.amount),u.date,u.claimed?u.dateClaimed:'',u.claimed?'Claimed':'Unpaid']),
-    [B('TOTAL ('+M.unpaidM.length+')'),MONB(sum(M.unpaidM,u=>u.amount))]]};
+    [B('TOTAL'),'',MONB(t.sales),MONB(t.unpaid),MONB(t.claimed),MONB(t.online),MONB(t.exp),MONB(t.coh),MONB(t.taken),MONB(t.collected),MONB(t.left),MONB(t.onlineRecv)]]};
+  const unp={name:'Unpaid',cols:[24,12,13,12,12,13,14,10],rows:[[B('Unpaid recorded — '+mn)],[],
+    [H('Name'),H('Claim stub #'),H('Amount'),H('Paid'),H('Balance'),H('Unpaid date'),H('Date fully paid'),H('Status')],
+    ...M.unpaidM.map(u=>[u.name,u.stub||'',MON(u.amount),MON(paidOf(u)),MON(balOf(u)),u.date,u.claimed?u.dateClaimed:'',u.claimed?'Claimed':(isPartial(u)?'Partial':'Unpaid')]),
+    [B('TOTAL ('+M.unpaidM.length+')'),'',MONB(sum(M.unpaidM,u=>u.amount))]]};
   const exp={name:'Expenses',cols:[12,28,14,16,18,44],rows:[[B('Expenses — '+mn)],[],
     [H('Date paid'),H('What for'),H('Amount'),H('From this date'),H('From previous days'),H('Taken from')],
     ...M.expM.map(e=>[e.date,e.desc,MON(e.amount),MON(selfPart(e)),MON(oldSum(e)),oldParts(e).map(x=>x.date+' '+peso(x.amount)).join(', ')]),
@@ -1229,14 +1474,19 @@ function exportMonth(){
     [H('Paid from daily sales of'),H('Daily sales'),H('Amount taken')],
     ...(()=>{const by={};M.expM.forEach(e=>srcs(e).forEach(x=>{if(num(x.amount)>0)by[x.date]=r2((by[x.date]||0)+num(x.amount));}));
       return Object.keys(by).sort().map(k=>{const r=reportFor(k);return [k,r&&r.snap?MON(r.snap.sales):'',MON(by[k])];});})()]};
-  saveBytes(makeXlsx([{name:'Summary',cols:[40,16,12],rows:S},daily,unp,sheetClaimed(M.claimedM,'Claimed — '+mn),sheetOnline(M,mn),exp,sheetOutstanding()]),
+  const colM=(DB.collections||[]).filter(c=>c.date.startsWith(ym)).sort((a,b)=>a.date.localeCompare(b.date));
+  const colS={name:'Collections',cols:[14,20,26,14,28],rows:[[B('Collections — '+mn)],[],
+    [H('Date collected'),H('Collected by'),H('Days covered'),H('Amount'),H('Note')],
+    ...colM.map(c=>[c.date,c.name,c.from+' to '+c.to,MON(c.total),c.note||'']),
+    [B('TOTAL ('+colM.length+')'),'','',MONB(sum(colM,c=>c.total))]]};
+  saveBytes(makeXlsx([{name:'Summary',cols:[40,16,12],rows:S},daily,unp,sheetClaimed(M.claimedM,'Claimed & partial payments — '+mn,p=>p.date.startsWith(ym)),sheetOnline(M,mn),exp,colS,sheetOutstanding()]),
     'LaundryCash_'+ym+'.xlsx',XLSX_MIME);
 }
 
 /* ================= Init ================= */
 function renderAll(){
   $('hdrTitle').textContent=DB.settings.shop||'Laundry Cash';
-  renderDash();renderUnpaid();renderClaimed();renderOnline();renderExp();renderMore();renderSum();
+  renderDash();renderUnpaid();renderClaimed();renderOnline();renderExp();renderMore();renderSum();renderColl();
   if($('p-report').classList.contains('on'))renderReport();
 }
 load();
